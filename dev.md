@@ -4,6 +4,6 @@ These accounts are for local development only.
 
 | Role | Email | Password |
 | --- | --- | --- |
-| donor | donor@foodbridge.local | FoodBridgeDev123! |
-| receiver | receiver@foodbridge.local | FoodBridgeDev123! |
-| ngo | ngo@foodbridge.local | FoodBridgeDev123! |
+| donor | donor@overlfow.local | overlfowDev123! |
+| receiver | receiver@overlfow.local | overlfowDev123! |
+| ngo | ngo@overlfow.local | overlfowDev123! |

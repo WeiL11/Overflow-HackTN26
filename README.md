@@ -1,4 +1,4 @@
-# FoodBridge
+# Overlfow-Hack
 
 Food donation and redistribution app built with React, TypeScript, Vite, and Supabase.
 

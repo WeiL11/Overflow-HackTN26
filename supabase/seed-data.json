@@ -2,19 +2,19 @@
   "users": [
     {
       "id": "10000000-0000-4000-8000-000000000001",
-      "email": "donor@foodbridge.local",
+      "email": "donor@overlfow.local",
       "fullName": "Dev Donor",
       "role": "donor"
     },
     {
       "id": "10000000-0000-4000-8000-000000000002",
-      "email": "receiver@foodbridge.local",
+      "email": "receiver@overlfow.local",
       "fullName": "Dev Receiver",
       "role": "receiver"
     },
     {
       "id": "10000000-0000-4000-8000-000000000003",
-      "email": "ngo@foodbridge.local",
+      "email": "ngo@overlfow.local",
       "fullName": "Dev NGO",
       "role": "ngo"
     }

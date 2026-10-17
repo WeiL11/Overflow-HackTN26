@@ -63,7 +63,7 @@ const seed = async () => {
   const admin = createClient(credentials.apiUrl, credentials.serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const password = process.env.SEED_PASSWORD || "FoodBridgeDev123!";
+  const password = process.env.SEED_PASSWORD || "overlfowDev123!";
   const { data: usersData, error: usersError } = await admin.auth.admin.listUsers({ perPage: 1000 });
   if (usersError) {
     throw new Error(`Listing auth users failed: ${usersError.message}`);

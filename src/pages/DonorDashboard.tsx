@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 import { Plus, Package, MapPin, Trash2, CheckCircle, XCircle, User, Building2 } from 'lucide-react';
 
 interface FoodListing {

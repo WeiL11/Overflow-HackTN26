@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 import Navbar from '@/components/Navbar';
 import { Leaf, Heart, Search, Building2 } from 'lucide-react';
 import { APP_NAME } from '@/config/brand';
