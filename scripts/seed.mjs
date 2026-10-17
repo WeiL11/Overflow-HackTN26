@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+import { resolveSeedUserIds } from "./seed-users.mjs";
 import { generateDevAccounts } from "./generate-dev-accounts.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -64,33 +65,34 @@ const seed = async () => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const password = process.env.SEED_PASSWORD || "overlfowDev123!";
-  const { data: usersData, error: usersError } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  if (usersError) {
-    throw new Error(`Listing auth users failed: ${usersError.message}`);
+  const authUsers = [];
+  for (let page = 1; ; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new Error(`Listing auth users failed: ${error.message}`);
+    authUsers.push(...data.users);
+    if (data.users.length < 1000) break;
   }
+  const userIds = resolveSeedUserIds(seedData.users, authUsers);
 
   for (const user of seedData.users) {
-    const existingById = usersData.users.find((candidate) => candidate.id === user.id);
-    const existingByEmail = usersData.users.find((candidate) => candidate.email === user.email);
-    if (existingByEmail && existingByEmail.id !== user.id) {
-      throw new Error(`Auth email is already assigned to another user: ${user.email}`);
-    }
+    const userId = userIds.get(user.id);
+    const existing = authUsers.some(candidate => candidate.id === userId);
     const attributes = {
-      id: user.id,
+      id: userId,
       email: user.email,
       password,
       email_confirm: true,
       user_metadata: { full_name: user.fullName, role: user.role },
     };
-    if (existingById) {
-      const response = await admin.auth.admin.updateUserById(user.id, attributes);
+    if (existing) {
+      const response = await admin.auth.admin.updateUserById(userId, attributes);
       assertResponse(response, `Updating auth user ${user.email}`);
     } else {
       const response = await admin.auth.admin.createUser(attributes);
       assertResponse(response, `Creating auth user ${user.email}`);
     }
     const profileResponse = await admin.from("profiles").upsert(
-      { user_id: user.id, full_name: user.fullName, role: user.role },
+      { user_id: userId, full_name: user.fullName, role: user.role },
       { onConflict: "user_id" },
     );
     assertResponse(profileResponse, `Upserting profile ${user.email}`);
@@ -99,7 +101,7 @@ const seed = async () => {
   const expiryBase = Date.now();
   const listings = seedData.listings.map((listing) => ({
     id: listing.id,
-    donor_id: listing.donorId,
+    donor_id: userIds.get(listing.donorId) || listing.donorId,
     food_name: listing.foodName,
     quantity: listing.quantity,
     location: listing.location,
@@ -111,7 +113,7 @@ const seed = async () => {
   const requests = seedData.requests.map((request) => ({
     id: request.id,
     listing_id: request.listingId,
-    receiver_id: request.receiverId,
+    receiver_id: userIds.get(request.receiverId) || request.receiverId,
     status: request.status,
     quantity: request.quantity,
     notes: request.notes || null,

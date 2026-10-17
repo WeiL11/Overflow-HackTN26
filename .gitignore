@@ -29,3 +29,5 @@ supabase/.temp/
 
 # AI photo server secrets
 .env.server
+# Local edge-function secrets
+supabase/.env.functions

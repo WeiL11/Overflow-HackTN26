@@ -1,4 +1,4 @@
-.PHONY: help install setup frontend ai-server backend backend-stop backend-status db-reset seed dev-accounts check dev
+.PHONY: help install setup frontend ai-server backend backend-stop backend-status db-reset seed dev-accounts check dev migrate
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -6,7 +6,7 @@ help: ## Show this help message
 install: ## Install npm dependencies
 	npm install
 
-setup: install backend seed ## Install dependencies, start the backend, and seed data
+setup: install backend migrate seed ## Install dependencies, start the backend, and seed data
 
 frontend: ## Start the frontend development server
 	npm run dev -- --host 127.0.0.1
@@ -36,4 +36,8 @@ dev-accounts: ## Generate the local development account guide
 check: ## Run lint, tests, and the production build
 	npm run lint && npm test && npm run build
 
-dev: backend seed frontend ## Start the backend, seed data, and run the frontend
+migrate: ## Apply pending local database migrations
+	npx supabase migration up
+
+dev: backend migrate seed ## Start the database, configured AI services, and frontend
+	node scripts/dev.mjs
