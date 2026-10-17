@@ -17,6 +17,24 @@ export const TAGS = [
 
 export const MAX_RESULTS = 10;
 
+// Parse the first complete JSON object in a model reply, ignoring any text before or after it.
+export function extractJson(text) {
+  const start = text.indexOf("{");
+  if (start === -1) throw new Error("Model did not return JSON.");
+  let depth = 0;
+  let inString = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (ch === "\\") i++;
+      else if (ch === '"') inString = false;
+    } else if (ch === '"') inString = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}" && --depth === 0) return JSON.parse(text.slice(start, i + 1));
+  }
+  throw new Error("Model returned incomplete JSON.");
+}
+
 const hoursUntil = (iso, now) => Math.max(0, Math.round((new Date(iso).getTime() - now) / 3_600_000));
 
 // One compact line per listing with short ids (L1, L2, ...) so the prompt stays small
@@ -53,6 +71,9 @@ Rules:
   need ranks above ingredients that need cooking. Return an empty list if nothing fits.
 - Use only these categories: ${CATEGORIES.join(", ")}.
 - Use only these tags: ${TAGS.join(", ")}.
+- Only add avoidTags for things the person explicitly rules out (e.g. "I can't cook" -> needs_cooking).
+  Never put dietary tags in avoidTags: vegan food is also vegetarian, and allergies go in mustHaveTags
+  (e.g. "nut allergy" -> nut_free).
 
 Reply with ONLY a JSON object, no markdown:
 {
@@ -82,7 +103,7 @@ export function normalizeSearchResponse(raw, listings, idMap) {
   const byId = new Map(listings.map((listing) => [listing.id, listing]));
   const categories = pickKnown(raw?.categories, CATEGORIES);
   const mustHaveTags = pickKnown(raw?.mustHaveTags, TAGS);
-  const avoidTags = pickKnown(raw?.avoidTags, TAGS);
+  const avoidTags = pickKnown(raw?.avoidTags, TAGS).filter((tag) => !DIETARY_TAGS.includes(tag));
   const requiredDietary = mustHaveTags.filter((tag) => DIETARY_TAGS.includes(tag));
   const preferredTags = mustHaveTags.filter((tag) => !DIETARY_TAGS.includes(tag));
   const allowed = (listing) => {

@@ -3,7 +3,7 @@
 //   POST /api/analyze-food  { image: "data:image/jpeg;base64,..." }
 //   -> { foodName, quantity, shelfLifeHours, description, model }
 //   POST /api/search-food   { query: "vegetarian dinner for 4, no nuts" }
-//   -> { summary, filters, results: [{ id, reason }], model, fallback }
+//   -> { summary, filters, results: [{ id, reason }], model, requestId, fallback }
 //
 // Requests must carry the signed-in user's Supabase access token so only
 // logged-in users can spend OCI credits. OCI credentials come from
@@ -11,7 +11,7 @@
 import http from "node:http";
 import { createRequire } from "node:module";
 
-import { buildCatalog, buildSearchPrompt, keywordSearch, normalizeSearchResponse } from "./searchFood.mjs";
+import { buildCatalog, buildSearchPrompt, extractJson, keywordSearch, normalizeSearchResponse } from "./searchFood.mjs";
 
 const require = createRequire(import.meta.url);
 
@@ -82,12 +82,6 @@ const getUser = async (authHeader) => {
   return r.ok ? r.json() : null;
 };
 
-const extractJson = (text) => {
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("Model did not return JSON.");
-  return JSON.parse(match[0]);
-};
-
 const clampInt = (value, min, max, fallback) => {
   const n = Math.round(Number(value));
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
@@ -113,7 +107,8 @@ const chatJson = async (content, maxTokens) => {
       const text = response.chatResult.chatResponse.choices[0].message.content
         .map((part) => part.text || "")
         .join("");
-      return { raw: extractJson(text), model: modelId };
+      const usage = response.chatResult.chatResponse.usage;
+      return { raw: extractJson(text), model: modelId, requestId: response.opcRequestId, tokens: usage?.totalTokens ?? null };
     } catch (error) {
       lastError = error;
       console.warn(`[ai] ${modelId} failed: ${error.statusCode || ""} ${error.message}`);
@@ -156,15 +151,15 @@ const fetchAvailableListings = async (authHeader) => {
 const searchFood = async (query, authHeader) => {
   const listings = await fetchAvailableListings(authHeader);
   if (listings.length === 0) {
-    return { summary: "", filters: { categories: [], mustHaveTags: [], avoidTags: [] }, results: [], model: null, fallback: false };
+    return { summary: "", filters: { categories: [], mustHaveTags: [], avoidTags: [] }, results: [], model: null, requestId: null, fallback: false };
   }
   const catalog = buildCatalog(listings);
   try {
-    const { raw, model } = await chatJson([{ type: "TEXT", text: buildSearchPrompt(query, catalog.text) }], 900);
-    return { ...normalizeSearchResponse(raw, listings, catalog.idMap), model, fallback: false };
+    const { raw, model, requestId, tokens } = await chatJson([{ type: "TEXT", text: buildSearchPrompt(query, catalog.text) }], 900);
+    return { ...normalizeSearchResponse(raw, listings, catalog.idMap), model, requestId, tokens, fallback: false };
   } catch (error) {
     console.warn(`[search-food] falling back to keyword search: ${error.message}`);
-    return { ...keywordSearch(query, listings), model: null, fallback: true };
+    return { ...keywordSearch(query, listings), model: null, requestId: null, fallback: true };
   }
 };
 
@@ -180,7 +175,7 @@ const server = http.createServer(async (req, res) => {
       }
       const started = Date.now();
       const result = await searchFood(query.trim(), req.headers.authorization);
-      console.log(`[search-food] user=${user.id} model=${result.model ?? "keyword"} ${Date.now() - started}ms -> ${result.results.length} results`);
+      console.log(`[search-food] user=${user.id} model=${result.model ?? "keyword"} oci-request-id=${result.requestId ?? "-"} tokens=${result.tokens ?? "-"} ${Date.now() - started}ms -> ${result.results.length} results`);
       return json(res, 200, result);
     }
     if (req.method !== "POST" || req.url !== "/api/analyze-food") return json(res, 404, { error: "Not found" });

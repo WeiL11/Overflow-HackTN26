@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCatalog, keywordSearch, normalizeSearchResponse } from '../../server/searchFood.mjs';
+import { buildCatalog, extractJson, keywordSearch, normalizeSearchResponse } from '../../server/searchFood.mjs';
 
 const listing = (id: string, food_name: string, category: string, tags: string[], description = '') => ({
   id,
@@ -65,6 +65,16 @@ describe('normalizeSearchResponse', () => {
     expect(result.results).toEqual([{ id: 'uuid-chicken', reason: 'Also fits: halal, nut free' }]);
   });
 
+  it('never treats dietary tags as things to avoid', () => {
+    const result = normalizeSearchResponse(
+      { mustHaveTags: ['vegetarian'], avoidTags: ['vegan', 'needs_cooking'], results: [{ id: 'L1' }] },
+      listings,
+      idMap,
+    );
+    expect(result.filters.avoidTags).toEqual(['needs_cooking']);
+    expect(result.results.map(r => r.id)).toEqual(['uuid-curry']);
+  });
+
   it('handles junk model output', () => {
     expect(normalizeSearchResponse(null, listings, idMap)).toMatchObject({ summary: '', results: [] });
   });
@@ -84,5 +94,16 @@ describe('keywordSearch', () => {
 
   it('finds baby food by category', () => {
     expect(keywordSearch('something for my baby', listings).results[0].id).toBe('uuid-baby');
+  });
+});
+
+describe('extractJson', () => {
+  it('reads the first object and ignores trailing text', () => {
+    const text = 'Sure!\n{"summary": "a {b} \\"c\\"", "results": [{"id": "L1"}]}\n\nNote: {not json}';
+    expect(extractJson(text)).toEqual({ summary: 'a {b} "c"', results: [{ id: 'L1' }] });
+  });
+
+  it('throws when there is no JSON', () => {
+    expect(() => extractJson('no json here')).toThrow();
   });
 });

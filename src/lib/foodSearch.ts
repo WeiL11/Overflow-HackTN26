@@ -5,6 +5,7 @@ export interface FoodSearchResult {
   filters: { categories: string[]; mustHaveTags: string[]; avoidTags: string[] };
   results: { id: string; reason: string }[];
   model: string | null;
+  requestId: string | null;
   fallback: boolean;
 }
 

@@ -11,6 +11,9 @@ import { Badge, Button, Card, Dialog, Tabs, Text, TextArea, TextField } from '@r
 import { toast } from 'react-toastify';
 import { Package, MapPin, Search, CheckCircle, Sparkles, Loader2, X } from 'lucide-react';
 
+const modelLabel = (modelId: string) =>
+  modelId.includes('maverick') ? 'Llama 4 Maverick' : modelId.includes('scout') ? 'Llama 4 Scout' : modelId;
+
 const AI_EXAMPLES = [
   'Vegetarian dinner for a family of 4',
   'Halal food, no nuts',
@@ -379,6 +382,11 @@ export default function ReceiverDashboard() {
               {aiResult && !aiSearching && (
                 <div className="mt-4 space-y-3 rounded-lg border border-primary/20 bg-muted/30 p-4">
                   {aiResult.summary && <p className="text-sm text-foreground">{aiResult.summary}</p>}
+                  <p className="text-xs text-muted-foreground" title={aiResult.requestId ? `OCI request ID: ${aiResult.requestId}` : undefined}>
+                    {aiResult.fallback || !aiResult.model
+                      ? 'AI unavailable: keyword matches'
+                      : `Powered by Oracle Cloud Generative AI · ${modelLabel(aiResult.model)}`}
+                  </p>
                   {(aiResult.filters.categories.length > 0 || aiResult.filters.mustHaveTags.length > 0 || aiResult.filters.avoidTags.length > 0) && (
                     <div className="flex flex-wrap gap-1.5">
                       {aiResult.filters.categories.map(category => (
