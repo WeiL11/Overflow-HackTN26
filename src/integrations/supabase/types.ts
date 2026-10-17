@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       food_listings: {
         Row: {
+          photo_path: string | null
+          food_analysis: Json | null
           created_at: string
           donor_id: string
           expiry_time: string
@@ -26,6 +28,8 @@ export type Database = {
           status: string
         }
         Insert: {
+          photo_path?: string | null
+          food_analysis?: Json | null
           created_at?: string
           donor_id: string
           expiry_time: string
@@ -36,6 +40,8 @@ export type Database = {
           status?: string
         }
         Update: {
+          photo_path?: string | null
+          food_analysis?: Json | null
           created_at?: string
           donor_id?: string
           expiry_time?: string

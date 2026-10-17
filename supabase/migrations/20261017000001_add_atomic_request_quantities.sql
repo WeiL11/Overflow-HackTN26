@@ -1,27 +1,39 @@
+-- Some local databases applied this schema under the old shared 20261017000000
+-- version. Upgrade text quantities only once, preserving integer quantities (including zero).
 DO $$
 BEGIN
   IF EXISTS (
-    SELECT 1
-    FROM public.food_listings
-    WHERE quantity !~ '^\s*[1-9][0-9]*'
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'food_listings'
+      AND column_name = 'quantity' AND data_type <> 'integer'
   ) THEN
-    RAISE EXCEPTION 'Existing food listing quantities must begin with a positive whole number';
+    IF EXISTS (SELECT 1 FROM public.food_listings WHERE quantity !~ '^\s*[1-9][0-9]*') THEN
+      RAISE EXCEPTION 'Existing food listing quantities must begin with a positive whole number';
+    END IF;
+    ALTER TABLE public.food_listings
+      ALTER COLUMN quantity TYPE integer
+      USING substring(quantity FROM '^\s*([0-9]+)')::integer;
   END IF;
 END;
 $$;
 
-ALTER TABLE public.food_listings
-  ALTER COLUMN quantity TYPE integer
-  USING substring(quantity FROM '^\s*([0-9]+)')::integer;
-
-ALTER TABLE public.food_listings
-  ADD CONSTRAINT food_listings_quantity_nonnegative CHECK (quantity >= 0);
-
 ALTER TABLE public.food_requests
-  ADD COLUMN quantity integer NOT NULL DEFAULT 1,
-  ADD COLUMN notes text,
-  ADD CONSTRAINT food_requests_quantity_positive CHECK (quantity > 0),
-  ADD CONSTRAINT food_requests_notes_length CHECK (notes IS NULL OR char_length(notes) <= 1000);
+  ADD COLUMN IF NOT EXISTS quantity integer NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS notes text;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.food_listings'::regclass AND conname = 'food_listings_quantity_nonnegative') THEN
+    ALTER TABLE public.food_listings ADD CONSTRAINT food_listings_quantity_nonnegative CHECK (quantity >= 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.food_requests'::regclass AND conname = 'food_requests_quantity_positive') THEN
+    ALTER TABLE public.food_requests ADD CONSTRAINT food_requests_quantity_positive CHECK (quantity > 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.food_requests'::regclass AND conname = 'food_requests_notes_length') THEN
+    ALTER TABLE public.food_requests ADD CONSTRAINT food_requests_notes_length CHECK (notes IS NULL OR char_length(notes) <= 1000);
+  END IF;
+END;
+$$;
 
 DROP POLICY IF EXISTS "Receivers can insert requests" ON public.food_requests;
 DROP POLICY IF EXISTS "Donors can update request status" ON public.food_requests;

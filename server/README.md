@@ -2,7 +2,7 @@
 
 `analyze-food.mjs` powers the "Snap or upload a photo" button on the donor form. It sends the photo to an
 OCI Generative AI vision model (Llama 4 Maverick, falling back to Llama 4 Scout) and returns suggestions for
-**Food Name**, **Quantity** and **Available Until**. Pickup Location is filled in the browser from the donor's
+**Food Name** and a visible **Quantity** estimate. Donors enter **Available Until** themselves; the model does not assess safe expiry. Pickup Location is filled in the browser from the donor's
 current location (HTTPS or localhost only) or their last donation, and the donor must confirm it.
 
 Only signed-in users can call the endpoint; the server checks their Supabase access token.
@@ -21,8 +21,8 @@ Only signed-in users can call the endpoint; the server checks their Supabase acc
 3. Run the API next to the frontend:
 
    ```bash
-   make ai-server   # or: npm run ai-server
-   make frontend
+   make dev         # starts configured AI services and frontend together
+   # Or run make ai-server and make frontend in separate terminals
    ```
 
    Vite proxies `/api` to `http://127.0.0.1:8787`.
