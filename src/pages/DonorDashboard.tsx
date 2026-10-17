@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { analyzeFoodPhoto, detectCurrentAddress, resizeImage, toDatetimeLocal } from '@/lib/foodPhoto';
+import { geocodeAddress, type LatLng } from '@/lib/geo';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
 import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
@@ -52,6 +53,7 @@ export default function DonorDashboard() {
   const [analyzing, setAnalyzing] = useState(false);
   const [aiFilled, setAiFilled] = useState(false);
   const [locationSource, setLocationSource] = useState<'gps' | 'previous' | null>(null);
+  const [gpsFill, setGpsFill] = useState<{ address: string; position: LatLng } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,6 +69,7 @@ export default function DonorDashboard() {
     setPhotoPreview(null);
     setAiFilled(false);
     setLocationSource(null);
+    setGpsFill(null);
   };
 
   // Pre-fill the pickup location when the form opens; the donor must confirm it.
@@ -74,10 +77,11 @@ export default function DonorDashboard() {
     if (!showForm || location) return;
     let cancelled = false;
     (async () => {
-      const address = await detectCurrentAddress();
+      const detected = await detectCurrentAddress();
       if (cancelled) return;
-      if (address) {
-        setLocation(current => current || address);
+      if (detected) {
+        setLocation(current => current || detected.address);
+        setGpsFill(detected);
         setLocationSource('gps');
       } else if (listings[0]?.location) {
         setLocation(current => current || listings[0].location);
@@ -179,11 +183,15 @@ export default function DonorDashboard() {
       return;
     }
     setSubmitting(true);
+    // Pin the listing on the receivers' map: GPS if the donor kept the detected address, else look it up.
+    const position = gpsFill?.address === location ? gpsFill.position : await geocodeAddress(location);
     const { error } = await supabase.from('food_listings').insert({
       donor_id: user.id,
       food_name: foodName,
       quantity: parsedQuantity,
       location,
+      latitude: position?.lat ?? null,
+      longitude: position?.lng ?? null,
       expiry_time: new Date(expiryTime).toISOString(),
     });
     setSubmitting(false);

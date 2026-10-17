@@ -135,7 +135,7 @@ const analyze = async (image) => {
 // Available, unexpired listings as the signed-in user sees them (RLS applies).
 const fetchAvailableListings = async (authHeader) => {
   const params = new URLSearchParams({
-    select: "id,food_name,category,tags,description,quantity,location,expiry_time",
+    select: "id,food_name,category,tags,description,quantity,location,expiry_time,latitude,longitude",
     status: "eq.available",
     expiry_time: `gte.${new Date().toISOString()}`,
     order: "created_at.desc",
@@ -148,18 +148,18 @@ const fetchAvailableListings = async (authHeader) => {
   return r.json();
 };
 
-const searchFood = async (query, authHeader) => {
+const searchFood = async (query, near, authHeader) => {
   const listings = await fetchAvailableListings(authHeader);
   if (listings.length === 0) {
     return { summary: "", filters: { categories: [], mustHaveTags: [], avoidTags: [] }, results: [], model: null, requestId: null, fallback: false };
   }
-  const catalog = buildCatalog(listings);
+  const catalog = buildCatalog(listings, Date.now(), near);
   try {
     const { raw, model, requestId, tokens } = await chatJson([{ type: "TEXT", text: buildSearchPrompt(query, catalog.text) }], 900);
-    return { ...normalizeSearchResponse(raw, listings, catalog.idMap), model, requestId, tokens, fallback: false };
+    return { ...normalizeSearchResponse(raw, listings, catalog.idMap, near, query), model, requestId, tokens, fallback: false };
   } catch (error) {
     console.warn(`[search-food] falling back to keyword search: ${error.message}`);
-    return { ...keywordSearch(query, listings), model: null, requestId: null, fallback: true };
+    return { ...keywordSearch(query, listings, near), model: null, requestId: null, fallback: true };
   }
 };
 
@@ -169,12 +169,13 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && req.url === "/api/search-food") {
       const user = await getUser(req.headers.authorization);
       if (!user) return json(res, 401, { error: "Please log in to search with AI." });
-      const { query } = JSON.parse((await readBody(req)) || "{}");
+      const { query, near } = JSON.parse((await readBody(req)) || "{}");
+      const validNear = Number.isFinite(near?.lat) && Number.isFinite(near?.lng) ? { lat: near.lat, lng: near.lng } : null;
       if (typeof query !== "string" || !query.trim() || query.length > 300) {
         return json(res, 400, { error: "Describe what you need in 300 characters or less." });
       }
       const started = Date.now();
-      const result = await searchFood(query.trim(), req.headers.authorization);
+      const result = await searchFood(query.trim(), validNear, req.headers.authorization);
       console.log(`[search-food] user=${user.id} model=${result.model ?? "keyword"} oci-request-id=${result.requestId ?? "-"} tokens=${result.tokens ?? "-"} ${Date.now() - started}ms -> ${result.results.length} results`);
       return json(res, 200, result);
     }

@@ -7,9 +7,12 @@ import ExpiryCountdown from '@/components/ExpiryCountdown';
 import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
 import { searchFoodWithAI, type FoodSearchResult } from '@/lib/foodSearch';
 import { DIETARY_TAGS, categoryLabel, tagLabel } from '@/config/foodTaxonomy';
-import { Badge, Button, Card, Dialog, Select, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
+import { distanceMiles, formatMiles, toLatLng } from '@/lib/geo';
+import { useReceiverLocation } from '@/hooks/use-receiver-location';
+import FoodMap, { type MapListing } from '@/components/FoodMap';
+import { Badge, Button, Card, Dialog, SegmentedControl, Select, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
-import { Package, MapPin, Search, CheckCircle, Sparkles, Loader2, X } from 'lucide-react';
+import { Package, MapPin, Search, CheckCircle, Sparkles, Loader2, X, List, Map as MapIcon, Navigation } from 'lucide-react';
 
 const AI_EXAMPLES = [
   'Vegetarian dinner for a family of 4',
@@ -29,18 +32,27 @@ interface FoodListing {
   category: string;
   tags: string[];
   description: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
-type SortOrder = 'expiry' | 'newest' | 'match';
+// Miles from the receiver; null when the listing has no coordinates.
+type ListingWithDistance = FoodListing & { distance: number | null };
+
+type SortOrder = 'expiry' | 'nearest' | 'newest' | 'match';
 
 const SORT_LABELS: Record<SortOrder, string> = {
   expiry: 'Expiring soonest',
+  nearest: 'Nearest first',
   newest: 'Newest first',
   match: 'Best match',
 };
 
-const sortListings = (items: FoodListing[], order: SortOrder) => {
+const sortListings = (items: ListingWithDistance[], order: SortOrder) => {
   if (order === 'match') return items;
+  if (order === 'nearest') {
+    return [...items].sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+  }
   const key = order === 'expiry' ? 'expiry_time' : 'created_at';
   const direction = order === 'expiry' ? 1 : -1;
   return [...items].sort((a, b) => direction * (new Date(a[key]).getTime() - new Date(b[key]).getTime()));
@@ -63,6 +75,9 @@ export default function ReceiverDashboard() {
   const [aiResult, setAiResult] = useState<(FoodSearchResult & { query: string }) | null>(null);
   const [aiApplied, setAiApplied] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>('expiry');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const receiverLocation = useReceiverLocation();
+  const youLabel = receiverLocation.source === 'gps' ? 'Your location' : 'Vanderbilt campus';
   const [myRequests, setMyRequests] = useState<Map<string, string>>(new Map());
   const [requesting, setRequesting] = useState<string | null>(null);
   const [requestFormListingId, setRequestFormListingId] = useState<string | null>(null);
@@ -142,7 +157,7 @@ export default function ReceiverDashboard() {
     setAiQuery(trimmed);
     setAiSearching(true);
     try {
-      const result = await searchFoodWithAI(trimmed);
+      const result = await searchFoodWithAI(trimmed, receiverLocation.position);
       setAiResult({ ...result, query: trimmed });
       if (result.fallback) toast.info('AI is busy, so these are keyword matches.');
     } catch (error) {
@@ -177,7 +192,24 @@ export default function ReceiverDashboard() {
   const showingAi = aiApplied && aiResult !== null;
   // "Best match" only applies to AI results; otherwise fall back to the default expiry order.
   const activeSort: SortOrder = sortOrder === 'match' && !showingAi ? 'expiry' : sortOrder;
-  const filtered = sortListings(showingAi ? aiMatches : keywordMatches, activeSort);
+  const withDistance = (items: FoodListing[]): ListingWithDistance[] => items.map(listing => {
+    const position = toLatLng(listing.latitude, listing.longitude);
+    return { ...listing, distance: position ? distanceMiles(receiverLocation.position, position) : null };
+  });
+  const filtered = sortListings(withDistance(showingAi ? aiMatches : keywordMatches), activeSort);
+  const mapListings: MapListing[] = filtered.flatMap(listing => {
+    const position = toLatLng(listing.latitude, listing.longitude);
+    return position && listing.distance !== null ? [{ ...listing, position, distance: listing.distance }] : [];
+  });
+
+  // From a map pin: switch to the list and open that listing's request form.
+  const requestFromMap = (listingId: string) => {
+    setViewMode('list');
+    setRequestFormListingId(listingId);
+    setRequestedQuantity('1');
+    setRequestNotes('');
+    setTimeout(() => document.getElementById(`listing-${listingId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+  };
 
   const recipientName = profile?.full_name?.split(' ')[0] || 'there';
 
@@ -210,11 +242,18 @@ export default function ReceiverDashboard() {
         )}
 
         {filtered.length > 0 && (
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <p className="whitespace-nowrap text-sm text-muted-foreground">
-              {filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}
-            </p>
-            <div className="flex items-center gap-2">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm text-muted-foreground">
+              <p className="whitespace-nowrap">{filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}</p>
+              <p className="flex items-center gap-1 whitespace-nowrap text-xs">
+                <Navigation className="h-3 w-3" /> Distances from {receiverLocation.source === 'gps' ? 'your location' : 'Vanderbilt campus'}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <SegmentedControl.Root value={viewMode} onValueChange={value => setViewMode(value as 'list' | 'map')} size="1">
+                <SegmentedControl.Item value="list"><span className="flex items-center gap-1"><List className="h-3.5 w-3.5" /> List</span></SegmentedControl.Item>
+                <SegmentedControl.Item value="map"><span className="flex items-center gap-1"><MapIcon className="h-3.5 w-3.5" /> Map</span></SegmentedControl.Item>
+              </SegmentedControl.Root>
               <Text as="label" size="2" color="gray" htmlFor="listing-sort" className="whitespace-nowrap">Sort by</Text>
               <Select.Root value={activeSort} onValueChange={value => setSortOrder(value as SortOrder)}>
                 <Select.Trigger id="listing-sort" variant="soft" color="gray" />
@@ -235,6 +274,15 @@ export default function ReceiverDashboard() {
             <Package className="h-12 w-12 mx-auto mb-4 opacity-40" />
             <p>{showingAi || searchTerm ? 'No listings match your search. Try describing it differently.' : 'No food available right now. Check back soon!'}</p>
           </div>
+        ) : viewMode === 'map' ? (
+          <div className="space-y-2">
+            <FoodMap listings={mapListings} you={receiverLocation.position} youLabel={youLabel} onRequest={requestFromMap} />
+            {mapListings.length < filtered.length && (
+              <p className="text-xs text-muted-foreground">
+                {filtered.length - mapListings.length} {filtered.length - mapListings.length === 1 ? 'listing has' : 'listings have'} no map location; switch to List to see {filtered.length - mapListings.length === 1 ? 'it' : 'them'}.
+              </p>
+            )}
+          </div>
         ) : (
           <div className="space-y-4">
             {filtered.map(item => {
@@ -248,7 +296,7 @@ export default function ReceiverDashboard() {
                     ? 'rejected'
                     : 'available';
               return (
-                <Card key={item.id} className="card-shadow hover:card-shadow-hover transition-shadow">
+                <Card key={item.id} id={`listing-${item.id}`} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-2 flex-1">
@@ -271,7 +319,10 @@ export default function ReceiverDashboard() {
                         )}
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1"><Package className="h-3.5 w-3.5" />{item.quantity} items</span>
-                          <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{item.location}</span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5" />{item.location}
+                            {item.distance !== null && <span className="font-medium text-foreground">· {formatMiles(item.distance)} away</span>}
+                          </span>
                           <ExpiryCountdown expiryTime={item.expiry_time} />
                         </div>
                         {showingAi && aiReasons.get(item.id) && (
@@ -418,7 +469,7 @@ export default function ReceiverDashboard() {
               {aiResult && !aiSearching && (
                 <div className="mt-4 space-y-3 rounded-lg border border-primary/20 bg-muted/30 p-4">
                   {aiResult.summary && <p className="text-sm text-foreground">{aiResult.summary}</p>}
-                  {(aiResult.filters.categories.length > 0 || aiResult.filters.mustHaveTags.length > 0 || aiResult.filters.avoidTags.length > 0) && (
+                  {(aiResult.filters.categories.length > 0 || aiResult.filters.mustHaveTags.length > 0 || aiResult.filters.avoidTags.length > 0 || aiResult.filters.maxMiles != null) && (
                     <div className="flex flex-wrap gap-1.5">
                       {aiResult.filters.categories.map(category => (
                         <Badge key={category} size="1" variant="soft">{categoryLabel(category)}</Badge>
@@ -429,6 +480,9 @@ export default function ReceiverDashboard() {
                       {aiResult.filters.avoidTags.map(tag => (
                         <Badge key={tag} size="1" variant="soft" color="red">No {tagLabel(tag).toLowerCase()}</Badge>
                       ))}
+                      {aiResult.filters.maxMiles != null && (
+                        <Badge size="1" variant="soft" color="blue">Within {formatMiles(aiResult.filters.maxMiles)}</Badge>
+                      )}
                     </div>
                   )}
                   <div className="flex items-center justify-between gap-3">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCatalog, extractJson, keywordSearch, normalizeSearchResponse } from '../../server/searchFood.mjs';
+import { buildCatalog, extractJson, keywordSearch, maxMilesFromText, normalizeSearchResponse } from '../../server/searchFood.mjs';
 
 const listing = (id: string, food_name: string, category: string, tags: string[], description = '') => ({
   id,
@@ -120,5 +120,37 @@ describe('extractJson', () => {
 
   it('throws when there is no JSON', () => {
     expect(() => extractJson('no json here')).toThrow();
+  });
+});
+
+describe('distance limits', () => {
+  const near = { lat: 36.1447, lng: -86.8027 }; // Vanderbilt
+  const placed = [
+    { ...listings[3], latitude: 36.1530, longitude: -86.7980 }, // pretzels, ~0.6 mi
+    { ...listings[4], latitude: 36.1260, longitude: -86.7900 }, // baby food, ~1.5 mi
+    { ...listings[0], latitude: null, longitude: null }, // curry, unknown
+  ];
+  const { idMap } = buildCatalog(placed, Date.now(), near);
+
+  it('reads limits written in the query', () => {
+    expect(maxMilesFromText('vegan food within 2 miles')).toBe(2);
+    expect(maxMilesFromText('under 1.5 mi please')).toBe(1.5);
+    expect(maxMilesFromText('within 5 km')).toBeCloseTo(3.1, 1);
+    expect(maxMilesFromText('near me')).toBeNull();
+  });
+
+  it('drops model picks beyond maxMiles or without coordinates', () => {
+    const result = normalizeSearchResponse({ maxMiles: 1, results: [{ id: 'L1' }, { id: 'L2' }, { id: 'L3' }] }, placed, idMap, near);
+    expect(result.results.map(r => r.id)).toEqual(['uuid-pretzels']);
+    expect(result.filters.maxMiles).toBe(1);
+  });
+
+  it('falls back to the limit in the query when the model omits it', () => {
+    const result = normalizeSearchResponse({ results: [{ id: 'L1' }, { id: 'L2' }] }, placed, idMap, near, 'within 1 mile');
+    expect(result.results.map(r => r.id)).toEqual(['uuid-pretzels']);
+  });
+
+  it('applies the limit in keyword search too', () => {
+    expect(keywordSearch('anything within 1 mile', placed, near).results.map(r => r.id)).toEqual(['uuid-pretzels']);
   });
 });

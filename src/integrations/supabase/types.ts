@@ -23,7 +23,9 @@ export type Database = {
           expiry_time: string
           food_name: string
           id: string
+          latitude: number | null
           location: string
+          longitude: number | null
           quantity: number
           status: string
           tags: string[]
@@ -36,7 +38,9 @@ export type Database = {
           expiry_time: string
           food_name: string
           id?: string
+          latitude?: number | null
           location: string
+          longitude?: number | null
           quantity: number
           status?: string
           tags?: string[]
@@ -49,7 +53,9 @@ export type Database = {
           expiry_time?: string
           food_name?: string
           id?: string
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           quantity?: number
           status?: string
           tags?: string[]

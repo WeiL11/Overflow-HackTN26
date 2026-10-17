@@ -106,6 +106,8 @@ const seed = async () => {
     description: listing.description ?? null,
     quantity: listing.quantity,
     location: listing.location,
+    latitude: listing.latitude ?? null,
+    longitude: listing.longitude ?? null,
     expiry_time: new Date(expiryBase + listing.expiryOffsetHours * 60 * 60 * 1000).toISOString(),
     status: listing.status,
   }));
