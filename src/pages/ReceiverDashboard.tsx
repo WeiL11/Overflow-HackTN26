@@ -7,12 +7,9 @@ import ExpiryCountdown from '@/components/ExpiryCountdown';
 import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
 import { searchFoodWithAI, type FoodSearchResult } from '@/lib/foodSearch';
 import { DIETARY_TAGS, categoryLabel, tagLabel } from '@/config/foodTaxonomy';
-import { Badge, Button, Card, Dialog, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
+import { Badge, Button, Card, Dialog, Select, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import { Package, MapPin, Search, CheckCircle, Sparkles, Loader2, X } from 'lucide-react';
-
-const modelLabel = (modelId: string) =>
-  modelId.includes('maverick') ? 'Llama 4 Maverick' : modelId.includes('scout') ? 'Llama 4 Scout' : modelId;
 
 const AI_EXAMPLES = [
   'Vegetarian dinner for a family of 4',
@@ -34,6 +31,21 @@ interface FoodListing {
   description: string | null;
 }
 
+type SortOrder = 'expiry' | 'newest' | 'match';
+
+const SORT_LABELS: Record<SortOrder, string> = {
+  expiry: 'Expiring soonest',
+  newest: 'Newest first',
+  match: 'Best match',
+};
+
+const sortListings = (items: FoodListing[], order: SortOrder) => {
+  if (order === 'match') return items;
+  const key = order === 'expiry' ? 'expiry_time' : 'created_at';
+  const direction = order === 'expiry' ? 1 : -1;
+  return [...items].sort((a, b) => direction * (new Date(a[key]).getTime() - new Date(b[key]).getTime()));
+};
+
 interface MyRequest {
   listing_id: string;
   status: string;
@@ -50,6 +62,7 @@ export default function ReceiverDashboard() {
   const [aiSearching, setAiSearching] = useState(false);
   const [aiResult, setAiResult] = useState<(FoodSearchResult & { query: string }) | null>(null);
   const [aiApplied, setAiApplied] = useState(false);
+  const [sortOrder, setSortOrder] = useState<SortOrder>('expiry');
   const [myRequests, setMyRequests] = useState<Map<string, string>>(new Map());
   const [requesting, setRequesting] = useState<string | null>(null);
   const [requestFormListingId, setRequestFormListingId] = useState<string | null>(null);
@@ -66,7 +79,7 @@ export default function ReceiverDashboard() {
       .select('*')
       .eq('status', 'available')
       .gte('expiry_time', new Date().toISOString())
-      .order('created_at', { ascending: false });
+      .order('expiry_time', { ascending: true });
     setListings(data || []);
   };
 
@@ -162,7 +175,9 @@ export default function ReceiverDashboard() {
   });
   const aiReasons = new Map((aiResult?.results ?? []).map(r => [r.id, r.reason]));
   const showingAi = aiApplied && aiResult !== null;
-  const filtered = showingAi ? aiMatches : keywordMatches;
+  // "Best match" only applies to AI results; otherwise fall back to the default expiry order.
+  const activeSort: SortOrder = sortOrder === 'match' && !showingAi ? 'expiry' : sortOrder;
+  const filtered = sortListings(showingAi ? aiMatches : keywordMatches, activeSort);
 
   const recipientName = profile?.full_name?.split(' ')[0] || 'there';
 
@@ -191,6 +206,27 @@ export default function ReceiverDashboard() {
             <Button type="button" variant="ghost" size="1" onClick={clearAiSearch}>
               <X className="h-3.5 w-3.5" /> Clear
             </Button>
+          </div>
+        )}
+
+        {filtered.length > 0 && (
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="whitespace-nowrap text-sm text-muted-foreground">
+              {filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}
+            </p>
+            <div className="flex items-center gap-2">
+              <Text as="label" size="2" color="gray" htmlFor="listing-sort" className="whitespace-nowrap">Sort by</Text>
+              <Select.Root value={activeSort} onValueChange={value => setSortOrder(value as SortOrder)}>
+                <Select.Trigger id="listing-sort" variant="soft" color="gray" />
+                <Select.Content>
+                  {(Object.keys(SORT_LABELS) as SortOrder[])
+                    .filter(order => order !== 'match' || showingAi)
+                    .map(order => (
+                      <Select.Item key={order} value={order}>{SORT_LABELS[order]}</Select.Item>
+                    ))}
+                </Select.Content>
+              </Select.Root>
+            </div>
           </div>
         )}
 
@@ -382,11 +418,6 @@ export default function ReceiverDashboard() {
               {aiResult && !aiSearching && (
                 <div className="mt-4 space-y-3 rounded-lg border border-primary/20 bg-muted/30 p-4">
                   {aiResult.summary && <p className="text-sm text-foreground">{aiResult.summary}</p>}
-                  <p className="text-xs text-muted-foreground" title={aiResult.requestId ? `OCI request ID: ${aiResult.requestId}` : undefined}>
-                    {aiResult.fallback || !aiResult.model
-                      ? 'AI unavailable: keyword matches'
-                      : `Powered by Oracle Cloud Generative AI · ${modelLabel(aiResult.model)}`}
-                  </p>
                   {(aiResult.filters.categories.length > 0 || aiResult.filters.mustHaveTags.length > 0 || aiResult.filters.avoidTags.length > 0) && (
                     <div className="flex flex-wrap gap-1.5">
                       {aiResult.filters.categories.map(category => (
@@ -401,11 +432,18 @@ export default function ReceiverDashboard() {
                     </div>
                   )}
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="whitespace-nowrap text-sm text-muted-foreground">
                       {aiMatches.length} {aiMatches.length === 1 ? 'match' : 'matches'} found
                     </p>
                     <Dialog.Close>
-                      <Button type="button" disabled={aiMatches.length === 0} onClick={() => setAiApplied(true)}>
+                      <Button
+                        type="button"
+                        disabled={aiMatches.length === 0}
+                        onClick={() => {
+                          setAiApplied(true);
+                          setSortOrder('match');
+                        }}
+                      >
                         View Results
                       </Button>
                     </Dialog.Close>
