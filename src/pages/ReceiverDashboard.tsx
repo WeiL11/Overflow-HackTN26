@@ -5,9 +5,18 @@ import { useAuth } from '@/lib/auth';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
 import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
-import { Badge, Button, Card, Dialog, Text, TextArea, TextField } from '@radix-ui/themes';
+import { searchFoodWithAI, type FoodSearchResult } from '@/lib/foodSearch';
+import { DIETARY_TAGS, categoryLabel, tagLabel } from '@/config/foodTaxonomy';
+import { Badge, Button, Card, Dialog, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
-import { Package, MapPin, Search, CheckCircle } from 'lucide-react';
+import { Package, MapPin, Search, CheckCircle, Sparkles, Loader2, X } from 'lucide-react';
+
+const AI_EXAMPLES = [
+  'Vegetarian dinner for a family of 4',
+  'Halal food, no nuts',
+  'Snacks for my kids',
+  'Something I can eat without cooking',
+];
 
 interface FoodListing {
   id: string;
@@ -17,6 +26,9 @@ interface FoodListing {
   expiry_time: string;
   status: string;
   created_at: string;
+  category: string;
+  tags: string[];
+  description: string | null;
 }
 
 interface MyRequest {
@@ -30,6 +42,11 @@ export default function ReceiverDashboard() {
   const [listings, setListings] = useState<FoodListing[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchMode, setSearchMode] = useState<'ai' | 'keyword'>('ai');
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiSearching, setAiSearching] = useState(false);
+  const [aiResult, setAiResult] = useState<(FoodSearchResult & { query: string }) | null>(null);
+  const [aiApplied, setAiApplied] = useState(false);
   const [myRequests, setMyRequests] = useState<Map<string, string>>(new Map());
   const [requesting, setRequesting] = useState<string | null>(null);
   const [requestFormListingId, setRequestFormListingId] = useState<string | null>(null);
@@ -103,10 +120,46 @@ export default function ReceiverDashboard() {
     fetchListings();
   };
 
-  const filtered = listings.filter(l =>
-    l.food_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    l.location.toLowerCase().includes(searchTerm.toLowerCase())
+  const runAiSearch = async (query = aiQuery) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    setAiQuery(trimmed);
+    setAiSearching(true);
+    try {
+      const result = await searchFoodWithAI(trimmed);
+      setAiResult({ ...result, query: trimmed });
+      if (result.fallback) toast.info('AI is busy, so these are keyword matches.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'AI search failed.');
+      setSearchMode('keyword');
+      setSearchTerm(trimmed);
+    } finally {
+      setAiSearching(false);
+    }
+  };
+
+  const clearAiSearch = () => {
+    setAiApplied(false);
+    setAiResult(null);
+    setAiQuery('');
+  };
+
+  const term = searchTerm.toLowerCase();
+  const keywordMatches = listings.filter(l =>
+    l.food_name.toLowerCase().includes(term) ||
+    l.location.toLowerCase().includes(term) ||
+    categoryLabel(l.category).toLowerCase().includes(term) ||
+    l.tags.some(tag => tagLabel(tag).toLowerCase().includes(term))
   );
+
+  const listingsById = new Map(listings.map(l => [l.id, l]));
+  const aiMatches = (aiResult?.results ?? []).flatMap(r => {
+    const listing = listingsById.get(r.id);
+    return listing ? [listing] : [];
+  });
+  const aiReasons = new Map((aiResult?.results ?? []).map(r => [r.id, r.reason]));
+  const showingAi = aiApplied && aiResult !== null;
+  const filtered = showingAi ? aiMatches : keywordMatches;
 
   const recipientName = profile?.full_name?.split(' ')[0] || 'there';
 
@@ -123,10 +176,25 @@ export default function ReceiverDashboard() {
           <p className="mt-1 text-muted-foreground">Find fresh food available in your community.</p>
         </section>
 
+        {showingAi && aiResult && (
+          <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <div className="space-y-1">
+              <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Sparkles className="h-4 w-4 text-primary" />
+                {aiResult.fallback ? 'Keyword matches' : 'AI matches'} for “{aiResult.query}”
+              </p>
+              {aiResult.summary && <p className="text-sm text-muted-foreground">{aiResult.summary}</p>}
+            </div>
+            <Button type="button" variant="ghost" size="1" onClick={clearAiSearch}>
+              <X className="h-3.5 w-3.5" /> Clear
+            </Button>
+          </div>
+        )}
+
         {filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <Package className="h-12 w-12 mx-auto mb-4 opacity-40" />
-            <p>No food available right now. Check back soon!</p>
+            <p>{showingAi || searchTerm ? 'No listings match your search. Try describing it differently.' : 'No food available right now. Check back soon!'}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -145,12 +213,33 @@ export default function ReceiverDashboard() {
                   <div className="p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-2 flex-1">
-                        <h3 className="font-semibold text-foreground text-lg">{item.food_name}</h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-semibold text-foreground text-lg">{item.food_name}</h3>
+                          <Badge color="gray" variant="soft">{categoryLabel(item.category)}</Badge>
+                        </div>
+                        {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
+                        {item.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {[...item.tags]
+                              .sort((a, b) => Number(DIETARY_TAGS.includes(b)) - Number(DIETARY_TAGS.includes(a)))
+                              .slice(0, 5)
+                              .map(tag => (
+                                <Badge key={tag} size="1" variant="outline" color={DIETARY_TAGS.includes(tag) ? 'green' : 'gray'}>
+                                  {tagLabel(tag)}
+                                </Badge>
+                              ))}
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1"><Package className="h-3.5 w-3.5" />{item.quantity} items</span>
                           <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{item.location}</span>
                           <ExpiryCountdown expiryTime={item.expiry_time} />
                         </div>
+                        {showingAi && aiReasons.get(item.id) && (
+                          <p className="flex items-center gap-1.5 text-sm text-primary">
+                            <Sparkles className="h-3.5 w-3.5 shrink-0" /> {aiReasons.get(item.id)}
+                          </p>
+                        )}
                       </div>
                       <div className="shrink-0">
                         {hasRequested ? (
@@ -233,33 +322,116 @@ export default function ReceiverDashboard() {
         </Dialog.Trigger>
         <Dialog.Content maxWidth="560px">
           <Dialog.Title className="font-heading">Search available food</Dialog.Title>
-          <Dialog.Description size="2" mb="4">
-            Filter listings by food name or pickup location.
+          <Dialog.Description size="2" mb="3">
+            Describe what you need and AI will find matching listings, or filter by keyword.
           </Dialog.Description>
-          <TextField.Root
-            autoFocus
-            size="3"
-            placeholder="Search by food name or location..."
-            value={searchTerm}
-            onChange={event => setSearchTerm(event.target.value)}
-          >
-            <TextField.Slot>
-              <Search className="h-4 w-4 text-muted-foreground" />
-            </TextField.Slot>
-          </TextField.Root>
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              {filtered.length} {filtered.length === 1 ? 'listing' : 'listings'} found
-            </p>
-            <div className="flex gap-3">
-              {searchTerm && (
-                <Button type="button" variant="ghost" onClick={() => setSearchTerm('')}>Clear</Button>
+          <Tabs.Root value={searchMode} onValueChange={value => setSearchMode(value as 'ai' | 'keyword')}>
+            <Tabs.List>
+              <Tabs.Trigger value="ai"><Sparkles className="mr-1.5 h-4 w-4" /> Ask AI</Tabs.Trigger>
+              <Tabs.Trigger value="keyword"><Search className="mr-1.5 h-4 w-4" /> Keyword</Tabs.Trigger>
+            </Tabs.List>
+
+            <Tabs.Content value="ai" className="pt-4">
+              <form
+                onSubmit={event => {
+                  event.preventDefault();
+                  runAiSearch();
+                }}
+              >
+                <TextArea
+                  autoFocus
+                  size="3"
+                  maxLength={300}
+                  placeholder="e.g. Dinner for 5 people, halal, one of us has a nut allergy"
+                  value={aiQuery}
+                  onChange={event => setAiQuery(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault();
+                      runAiSearch();
+                    }
+                  }}
+                  disabled={aiSearching}
+                />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {AI_EXAMPLES.map(example => (
+                    <Button
+                      key={example}
+                      type="button"
+                      size="1"
+                      variant="soft"
+                      color="gray"
+                      disabled={aiSearching}
+                      onClick={() => runAiSearch(example)}
+                    >
+                      {example}
+                    </Button>
+                  ))}
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button type="submit" disabled={aiSearching || !aiQuery.trim()}>
+                    {aiSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {aiSearching ? 'Searching...' : 'Search with AI'}
+                  </Button>
+                </div>
+              </form>
+
+              {aiResult && !aiSearching && (
+                <div className="mt-4 space-y-3 rounded-lg border border-primary/20 bg-muted/30 p-4">
+                  {aiResult.summary && <p className="text-sm text-foreground">{aiResult.summary}</p>}
+                  {(aiResult.filters.categories.length > 0 || aiResult.filters.mustHaveTags.length > 0 || aiResult.filters.avoidTags.length > 0) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {aiResult.filters.categories.map(category => (
+                        <Badge key={category} size="1" variant="soft">{categoryLabel(category)}</Badge>
+                      ))}
+                      {aiResult.filters.mustHaveTags.map(tag => (
+                        <Badge key={tag} size="1" variant="soft" color="green">{tagLabel(tag)}</Badge>
+                      ))}
+                      {aiResult.filters.avoidTags.map(tag => (
+                        <Badge key={tag} size="1" variant="soft" color="red">No {tagLabel(tag).toLowerCase()}</Badge>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground">
+                      {aiMatches.length} {aiMatches.length === 1 ? 'match' : 'matches'} found
+                    </p>
+                    <Dialog.Close>
+                      <Button type="button" disabled={aiMatches.length === 0} onClick={() => setAiApplied(true)}>
+                        View Results
+                      </Button>
+                    </Dialog.Close>
+                  </div>
+                </div>
               )}
-              <Dialog.Close>
-                <Button type="button">View Results</Button>
-              </Dialog.Close>
-            </div>
-          </div>
+            </Tabs.Content>
+
+            <Tabs.Content value="keyword" className="pt-4">
+              <TextField.Root
+                size="3"
+                placeholder="Search by food, category, tag, or location..."
+                value={searchTerm}
+                onChange={event => setSearchTerm(event.target.value)}
+              >
+                <TextField.Slot>
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                </TextField.Slot>
+              </TextField.Root>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {keywordMatches.length} {keywordMatches.length === 1 ? 'listing' : 'listings'} found
+                </p>
+                <div className="flex gap-3">
+                  {searchTerm && (
+                    <Button type="button" variant="ghost" onClick={() => setSearchTerm('')}>Clear</Button>
+                  )}
+                  <Dialog.Close>
+                    <Button type="button" onClick={() => setAiApplied(false)}>View Results</Button>
+                  </Dialog.Close>
+                </div>
+              </div>
+            </Tabs.Content>
+          </Tabs.Root>
         </Dialog.Content>
       </Dialog.Root>
     </div>

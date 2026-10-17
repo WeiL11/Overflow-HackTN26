@@ -1,11 +1,19 @@
-# Photo autofill API
+# AI API (photo autofill and food search)
 
-`analyze-food.mjs` powers the "Snap or upload a photo" button on the donor form. It sends the photo to an
-OCI Generative AI vision model (Llama 4 Maverick, falling back to Llama 4 Scout) and returns suggestions for
-**Food Name**, **Quantity** and **Available Until**. Pickup Location is filled in the browser from the donor's
-current location (HTTPS or localhost only) or their last donation, and the donor must confirm it.
+`analyze-food.mjs` serves two endpoints backed by OCI Generative AI (Llama 4 Maverick, falling back to
+Llama 4 Scout):
 
-Only signed-in users can call the endpoint; the server checks their Supabase access token.
+- `POST /api/analyze-food` powers the "Snap or upload a photo" button on the donor form. It returns
+  suggestions for **Food Name**, **Quantity** and **Available Until**. Pickup Location is filled in the
+  browser from the donor's current location (HTTPS or localhost only) or their last donation, and the donor
+  must confirm it.
+- `POST /api/search-food` powers **Ask AI** in the receiver's Search Food dialog. It loads the available
+  listings the user can see, sends them to the model as a compact catalog with the user's request, and
+  returns ranked listing ids with a short reason each. Dietary tags the user asks for and tags to avoid are
+  enforced on the server (`searchFood.mjs`). If the model fails, it falls back to keyword ranking
+  (`fallback: true`).
+
+Only signed-in users can call the endpoints; the server checks their Supabase access token.
 
 ## Setup
 

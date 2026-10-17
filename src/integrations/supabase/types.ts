@@ -16,7 +16,9 @@ export type Database = {
     Tables: {
       food_listings: {
         Row: {
+          category: string
           created_at: string
+          description: string | null
           donor_id: string
           expiry_time: string
           food_name: string
@@ -24,9 +26,12 @@ export type Database = {
           location: string
           quantity: number
           status: string
+          tags: string[]
         }
         Insert: {
+          category?: string
           created_at?: string
+          description?: string | null
           donor_id: string
           expiry_time: string
           food_name: string
@@ -34,9 +39,12 @@ export type Database = {
           location: string
           quantity: number
           status?: string
+          tags?: string[]
         }
         Update: {
+          category?: string
           created_at?: string
+          description?: string | null
           donor_id?: string
           expiry_time?: string
           food_name?: string
@@ -44,6 +52,7 @@ export type Database = {
           location?: string
           quantity?: number
           status?: string
+          tags?: string[]
         }
         Relationships: []
       }
