@@ -1,0 +1,50 @@
+{
+  "users": [
+    {
+      "id": "10000000-0000-4000-8000-000000000001",
+      "email": "donor@foodbridge.local",
+      "fullName": "Dev Donor",
+      "role": "donor"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000002",
+      "email": "receiver@foodbridge.local",
+      "fullName": "Dev Receiver",
+      "role": "receiver"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000003",
+      "email": "ngo@foodbridge.local",
+      "fullName": "Dev NGO",
+      "role": "ngo"
+    }
+  ],
+  "listings": [
+    {
+      "id": "20000000-0000-4000-8000-000000000001",
+      "donorId": "10000000-0000-4000-8000-000000000001",
+      "foodName": "Fresh vegetable boxes",
+      "quantity": "12 boxes",
+      "location": "Community Kitchen",
+      "expiryOffsetHours": 24,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000002",
+      "donorId": "10000000-0000-4000-8000-000000000001",
+      "foodName": "Prepared meals",
+      "quantity": "20 meals",
+      "location": "Downtown Cafe",
+      "expiryOffsetHours": 8,
+      "status": "requested"
+    }
+  ],
+  "requests": [
+    {
+      "id": "30000000-0000-4000-8000-000000000001",
+      "listingId": "20000000-0000-4000-8000-000000000002",
+      "receiverId": "10000000-0000-4000-8000-000000000003",
+      "status": "pending"
+    }
+  ]
+}

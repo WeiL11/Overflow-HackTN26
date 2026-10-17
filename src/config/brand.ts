@@ -1,0 +1,4 @@
+export const APP_NAME = "FoodBridge";
+export const BRAND_COLOR = "152 55% 38%";
+export const APP_TAGLINE = "Reduce Food Waste, Feed Communities";
+export const APP_DESCRIPTION = `${APP_NAME} connects surplus food from donors to individuals and communities in need.`;
