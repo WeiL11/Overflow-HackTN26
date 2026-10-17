@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE, BRAND_COLOR } from "./config/brand";
+import "@radix-ui/themes/styles.css";
 import "./index.css";
 
 const appTitle = `${APP_NAME} — ${APP_TAGLINE}`;

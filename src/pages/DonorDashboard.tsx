@@ -4,18 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
+import { Badge, Button, Card, Dialog, Text, TextField, type BadgeProps } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import { Plus, Package, MapPin, Trash2, CheckCircle, XCircle, User, Building2 } from 'lucide-react';
 
 interface FoodListing {
   id: string;
   food_name: string;
-  quantity: string;
+  quantity: number;
   location: string;
   expiry_time: string;
   status: string;
@@ -27,6 +24,8 @@ interface FoodRequest {
   listing_id: string;
   receiver_id: string;
   status: string;
+  quantity: number;
+  notes: string | null;
   created_at: string;
 }
 
@@ -37,7 +36,7 @@ interface ReceiverProfile {
 }
 
 export default function DonorDashboard() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [listings, setListings] = useState<FoodListing[]>([]);
   const [requests, setRequests] = useState<FoodRequest[]>([]);
@@ -106,11 +105,16 @@ export default function DonorDashboard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    const parsedQuantity = Number.parseInt(quantity, 10);
+    if (!Number.isInteger(parsedQuantity) || parsedQuantity <= 0 || Number(quantity) !== parsedQuantity) {
+      toast.error('Quantity must be a positive whole number.');
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.from('food_listings').insert({
       donor_id: user.id,
       food_name: foodName,
-      quantity,
+      quantity: parsedQuantity,
       location,
       expiry_time: new Date(expiryTime).toISOString(),
     });
@@ -138,32 +142,15 @@ export default function DonorDashboard() {
     }
   };
 
-  const handleAcceptRequest = async (requestId: string, listingId: string) => {
-    // Update request status to accepted
-    const { error: reqError } = await supabase
-      .from('food_requests')
-      .update({ status: 'accepted' })
-      .eq('id', requestId);
-    if (reqError) {
-      toast.error(reqError.message);
+  const handleAcceptRequest = async (requestId: string) => {
+    const { error } = await supabase.rpc('respond_to_food_request', {
+      p_request_id: requestId,
+      p_status: 'accepted',
+    });
+    if (error) {
+      toast.error(error.message);
       return;
     }
-    // Update listing status to completed
-    const { error: listError } = await supabase
-      .from('food_listings')
-      .update({ status: 'completed' })
-      .eq('id', listingId);
-    if (listError) {
-      toast.error(listError.message);
-      return;
-    }
-    // Reject all other pending requests for this listing
-    await supabase
-      .from('food_requests')
-      .update({ status: 'rejected' })
-      .eq('listing_id', listingId)
-      .neq('id', requestId)
-      .eq('status', 'pending');
 
     toast.success('Request accepted!');
     fetchListings();
@@ -171,13 +158,14 @@ export default function DonorDashboard() {
   };
 
   const handleRejectRequest = async (requestId: string) => {
-    const { error } = await supabase
-      .from('food_requests')
-      .update({ status: 'rejected' })
-      .eq('id', requestId);
+    const { error } = await supabase.rpc('respond_to_food_request', {
+      p_request_id: requestId,
+      p_status: 'rejected',
+    });
     if (error) toast.error(error.message);
     else {
       toast.success('Request rejected');
+      fetchListings();
       fetchRequests();
     }
   };
@@ -192,71 +180,50 @@ export default function DonorDashboard() {
     });
   };
 
-  const statusColor = (status: string) => {
+  const statusColor = (status: string): Pick<BadgeProps, 'color' | 'variant'> => {
     switch (status) {
-      case 'available': return 'default' as const;
-      case 'requested': return 'secondary' as const;
-      case 'completed': return 'outline' as const;
-      default: return 'secondary' as const;
+      case 'available': return { color: 'green', variant: 'solid' };
+      case 'requested': return { color: 'gray', variant: 'soft' };
+      case 'completed': return { color: 'gray', variant: 'outline' };
+      default: return { color: 'gray', variant: 'soft' };
     }
   };
+
+  const donorName = profile?.full_name?.split(' ')[0] || 'there';
+  const availableListings = listings.filter(item => item.status === 'available').length;
+  const pendingRequestCount = requests.filter(request => request.status === 'pending').length;
 
   if (authLoading) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       <Navbar />
-      <div className="container mx-auto max-w-3xl px-4 py-10">
-        <div className="flex items-center justify-between mb-8">
+      <main className="min-h-0 flex-1 overflow-y-auto">
+        <div className="container mx-auto max-w-5xl px-4 py-10">
+        <section className="hero-gradient mb-6 rounded-2xl p-6 text-primary-foreground md:p-8">
           <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground">Donor Dashboard</h1>
-            <p className="text-muted-foreground">Manage your food donations</p>
+            <Badge color="green" variant="soft" className="mb-3 bg-background/90 text-primary">
+              Donor workspace
+            </Badge>
+            <h1 className="text-3xl font-heading font-bold">Hi, {donorName}</h1>
+            <p className="mt-1 text-primary-foreground/85">Manage donations and respond to community requests.</p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)}>
-            <Plus className="h-4 w-4 mr-1" /> Add Food
-          </Button>
-        </div>
+        </section>
 
-        {showForm && (
-          <Card className="mb-8 card-shadow">
-            <CardHeader>
-              <CardTitle className="font-heading text-xl">New Food Listing</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="foodName">Food Name</Label>
-                    <Input id="foodName" value={foodName} onChange={e => setFoodName(e.target.value)} required placeholder="e.g. Rice, Bread, Fruits" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="quantity">Quantity</Label>
-                    <Input id="quantity" value={quantity} onChange={e => setQuantity(e.target.value)} required placeholder="e.g. 5 kg, 10 packs" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Pickup Location</Label>
-                    <Input id="location" value={location} onChange={e => setLocation(e.target.value)} required placeholder="e.g. 123 Main St, Downtown" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="expiry">Available Until</Label>
-                    <Input
-                      id="expiry"
-                      type="datetime-local"
-                      value={expiryTime}
-                      onChange={e => setExpiryTime(e.target.value)}
-                      required
-                      min={new Date().toISOString().slice(0, 16)}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <Button type="submit" disabled={submitting}>{submitting ? 'Adding...' : 'Add Listing'}</Button>
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-                </div>
-              </form>
-            </CardContent>
+        <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Donation summary">
+          <Card className="border-l-4 border-l-primary p-5">
+            <p className="text-sm font-medium text-muted-foreground">Total donations</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">{listings.length}</p>
           </Card>
-        )}
+          <Card className="border-l-4 border-l-emerald-500 p-5">
+            <p className="text-sm font-medium text-muted-foreground">Available now</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">{availableListings}</p>
+          </Card>
+          <Card className="border-l-4 border-l-amber-500 p-5">
+            <p className="text-sm font-medium text-muted-foreground">Pending requests</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">{pendingRequestCount}</p>
+          </Card>
+        </section>
 
         {listings.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
@@ -268,24 +235,29 @@ export default function DonorDashboard() {
             {listings.map(item => {
               const itemRequests = getRequestsForListing(item.id);
               const pendingRequests = itemRequests.filter(r => r.status === 'pending');
+              const timelineStage: ListingStage = item.status === 'completed'
+                ? 'completed'
+                : pendingRequests.length > 0 || item.status === 'requested'
+                  ? 'requested'
+                  : 'available';
               return (
                 <Card key={item.id} className="card-shadow hover:card-shadow-hover transition-shadow">
-                  <CardContent className="p-5">
+                  <div className="p-5">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-foreground text-lg">{item.food_name}</h3>
-                          <Badge variant={statusColor(item.status)}>
+                          <Badge {...statusColor(item.status)}>
                             {item.status}
                           </Badge>
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mt-2">
-                          <span className="flex items-center gap-1"><Package className="h-3.5 w-3.5" />{item.quantity}</span>
+                          <span className="flex items-center gap-1"><Package className="h-3.5 w-3.5" />{item.quantity} items</span>
                           <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{item.location}</span>
                           <ExpiryCountdown expiryTime={item.expiry_time} />
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="shrink-0">
+                      <Button variant="ghost" size="1" onClick={() => handleDelete(item.id)} className="shrink-0">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -304,34 +276,40 @@ export default function DonorDashboard() {
                             <div key={req.id} className={`flex items-center justify-between rounded-lg px-3 py-2 ${isNgo ? 'bg-primary/10 border border-primary/20' : 'bg-muted/50'}`}>
                               <div className="flex items-center gap-2 text-sm">
                                 {isNgo ? <Building2 className="h-3.5 w-3.5 text-primary" /> : <User className="h-3.5 w-3.5 text-muted-foreground" />}
-                                <span className={isNgo ? 'text-foreground font-medium' : 'text-muted-foreground'}>
-                                  {profile?.full_name || `Receiver ${req.receiver_id.slice(0, 8)}...`}
-                                </span>
+                                <div className="flex flex-col">
+                                  <span className={isNgo ? 'text-foreground font-medium' : 'text-muted-foreground'}>
+                                    {profile?.full_name || `Receiver ${req.receiver_id.slice(0, 8)}...`}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">Requested: {req.quantity} items</span>
+                                  {req.notes && (
+                                    <span className="text-xs italic text-muted-foreground">“{req.notes}”</span>
+                                  )}
+                                </div>
                                 {isNgo && (
-                                  <Badge className="text-xs bg-primary/20 text-primary border-primary/30 hover:bg-primary/20">
+                                  <Badge color="green" variant="soft" className="text-xs bg-primary/20 text-primary border-primary/30 hover:bg-primary/20">
                                     NGO Priority
                                   </Badge>
                                 )}
-                                <Badge variant={
-                                  req.status === 'accepted' ? 'default' :
-                                  req.status === 'rejected' ? 'destructive' :
-                                  'secondary'
-                                } className="text-xs">
+                                <Badge
+                                  color={req.status === 'accepted' ? 'green' : req.status === 'rejected' ? 'red' : 'gray'}
+                                  variant={req.status === 'accepted' || req.status === 'rejected' ? 'solid' : 'soft'}
+                                  className="text-xs"
+                                >
                                   {req.status}
                                 </Badge>
                               </div>
                               {req.status === 'pending' && (
                                 <div className="flex gap-1">
                                   <Button
-                                    size="sm"
+                                    size="2"
                                     variant="ghost"
                                     className="h-7 px-2 text-primary hover:text-primary"
-                                    onClick={() => handleAcceptRequest(req.id, req.listing_id)}
+                                    onClick={() => handleAcceptRequest(req.id)}
                                   >
                                     <CheckCircle className="h-4 w-4 mr-1" /> Accept
                                   </Button>
                                   <Button
-                                    size="sm"
+                                    size="2"
                                     variant="ghost"
                                     className="h-7 px-2 text-destructive hover:text-destructive"
                                     onClick={() => handleRejectRequest(req.id)}
@@ -346,13 +324,57 @@ export default function DonorDashboard() {
                         </div>
                       </div>
                     )}
-                  </CardContent>
+                    <ListingTimeline stage={timelineStage} />
+                  </div>
                 </Card>
               );
             })}
           </div>
         )}
-      </div>
+        </div>
+      </main>
+      <Dialog.Root open={showForm} onOpenChange={setShowForm}>
+        <Dialog.Trigger>
+          <Button
+            size="3"
+            className="fixed bottom-6 right-6 z-[100] rounded-full px-5 shadow-xl"
+          >
+            <Plus className="h-5 w-5" /> Add Food
+          </Button>
+        </Dialog.Trigger>
+        <Dialog.Content maxWidth="640px">
+          <Dialog.Title className="font-heading">New Food Listing</Dialog.Title>
+          <Dialog.Description size="2" mb="4">
+            Share available food with recipients in your community.
+          </Dialog.Description>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Text as="label" size="2" weight="medium" htmlFor="foodName">Food Name</Text>
+                <TextField.Root id="foodName" value={foodName} onChange={e => setFoodName(e.target.value)} required placeholder="e.g. Rice, Bread, Fruits" />
+              </div>
+              <div className="space-y-2">
+                <Text as="label" size="2" weight="medium" htmlFor="quantity">Quantity</Text>
+                <TextField.Root id="quantity" type="number" min="1" step="1" value={quantity} onChange={e => setQuantity(e.target.value)} required placeholder="e.g. 5" />
+              </div>
+              <div className="space-y-2">
+                <Text as="label" size="2" weight="medium" htmlFor="location">Pickup Location</Text>
+                <TextField.Root id="location" value={location} onChange={e => setLocation(e.target.value)} required placeholder="e.g. 123 Main St, Downtown" />
+              </div>
+              <div className="space-y-2">
+                <Text as="label" size="2" weight="medium" htmlFor="expiry">Available Until</Text>
+                <TextField.Root id="expiry" type="datetime-local" value={expiryTime} onChange={e => setExpiryTime(e.target.value)} required min={new Date().toISOString().slice(0, 16)} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Dialog.Close>
+                <Button type="button" variant="outline" disabled={submitting}>Cancel</Button>
+              </Dialog.Close>
+              <Button type="submit" disabled={submitting}>{submitting ? 'Adding...' : 'Add Listing'}</Button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Root>
     </div>
   );
 }

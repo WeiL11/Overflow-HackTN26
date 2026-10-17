@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button, Card, Text, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import Navbar from '@/components/Navbar';
 import { Leaf } from 'lucide-react';
@@ -31,26 +28,26 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       <Navbar />
-      <div className="flex items-center justify-center px-4 py-20">
+      <main className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-4 py-20">
         <Card className="w-full max-w-md card-shadow">
-          <CardHeader className="text-center">
+          <div className="p-6 text-center">
             <div className="mx-auto mb-3 inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
               <Leaf className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle className="font-heading text-2xl">Welcome Back</CardTitle>
-            <CardDescription>Sign in to your {APP_NAME} account</CardDescription>
-          </CardHeader>
-          <CardContent>
+            <h2 className="font-heading text-2xl">Welcome Back</h2>
+            <p className="text-sm text-muted-foreground">Sign in to your {APP_NAME} account</p>
+          </div>
+          <div className="p-6 pt-0">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" />
+                <Text as="label" size="2" weight="medium" htmlFor="email">Email</Text>
+                <TextField.Root id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
+                <Text as="label" size="2" weight="medium" htmlFor="password">Password</Text>
+                <TextField.Root id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign In'}
@@ -60,9 +57,9 @@ export default function Login() {
               Don't have an account?{' '}
               <Link to="/signup" className="text-primary font-medium hover:underline">Sign up</Link>
             </p>
-          </CardContent>
+          </div>
         </Card>
-      </div>
+      </main>
     </div>
   );
 }

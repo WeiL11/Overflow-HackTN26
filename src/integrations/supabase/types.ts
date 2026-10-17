@@ -22,7 +22,7 @@ export type Database = {
           food_name: string
           id: string
           location: string
-          quantity: string
+          quantity: number
           status: string
         }
         Insert: {
@@ -32,7 +32,7 @@ export type Database = {
           food_name: string
           id?: string
           location: string
-          quantity: string
+          quantity: number
           status?: string
         }
         Update: {
@@ -42,7 +42,7 @@ export type Database = {
           food_name?: string
           id?: string
           location?: string
-          quantity?: string
+          quantity?: number
           status?: string
         }
         Relationships: []
@@ -52,6 +52,8 @@ export type Database = {
           created_at: string
           id: string
           listing_id: string
+          notes: string | null
+          quantity: number
           receiver_id: string
           status: string
         }
@@ -59,6 +61,8 @@ export type Database = {
           created_at?: string
           id?: string
           listing_id: string
+          notes?: string | null
+          quantity?: number
           receiver_id: string
           status?: string
         }
@@ -66,6 +70,8 @@ export type Database = {
           created_at?: string
           id?: string
           listing_id?: string
+          notes?: string | null
+          quantity?: number
           receiver_id?: string
           status?: string
         }
@@ -108,7 +114,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      reserve_food: {
+        Args: { p_listing_id: string; p_notes?: string; p_quantity: number }
+        Returns: Database["public"]["Tables"]["food_requests"]["Row"]
+      }
+      respond_to_food_request: {
+        Args: { p_request_id: string; p_status: string }
+        Returns: Database["public"]["Tables"]["food_requests"]["Row"]
+      }
     }
     Enums: {
       [_ in never]: never

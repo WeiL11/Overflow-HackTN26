@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null;
   profile: { full_name: string; role: string } | null;
   loading: boolean;
+  updateProfileName: (fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   loading: true,
+  updateProfileName: async () => {},
   signOut: async () => {},
 });
 
@@ -56,6 +58,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const updateProfileName = async (fullName: string) => {
+    if (!session?.user) throw new Error('You must be signed in to update your profile.');
+    const name = fullName.trim();
+    if (!name) throw new Error('Name is required.');
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ full_name: name })
+      .eq('user_id', session.user.id);
+    if (error) throw error;
+
+    setProfile(current => current ? { ...current, full_name: name } : current);
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -63,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, updateProfileName, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -24,7 +24,7 @@
       "id": "20000000-0000-4000-8000-000000000001",
       "donorId": "10000000-0000-4000-8000-000000000001",
       "foodName": "Fresh vegetable boxes",
-      "quantity": "12 boxes",
+      "quantity": 12,
       "location": "Community Kitchen",
       "expiryOffsetHours": 24,
       "status": "available"
@@ -33,7 +33,7 @@
       "id": "20000000-0000-4000-8000-000000000002",
       "donorId": "10000000-0000-4000-8000-000000000001",
       "foodName": "Prepared meals",
-      "quantity": "20 meals",
+      "quantity": 15,
       "location": "Downtown Cafe",
       "expiryOffsetHours": 8,
       "status": "requested"
@@ -44,7 +44,9 @@
       "id": "30000000-0000-4000-8000-000000000001",
       "listingId": "20000000-0000-4000-8000-000000000002",
       "receiverId": "10000000-0000-4000-8000-000000000003",
-      "status": "pending"
+      "status": "pending",
+      "quantity": 5,
+      "notes": "Please reserve these for tomorrow's community meal."
     }
   ]
 }

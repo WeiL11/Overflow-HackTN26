@@ -113,6 +113,8 @@ const seed = async () => {
     listing_id: request.listingId,
     receiver_id: request.receiverId,
     status: request.status,
+    quantity: request.quantity,
+    notes: request.notes || null,
   }));
   assertResponse(await admin.from("food_requests").upsert(requests, { onConflict: "id" }), "Upserting food requests");
 

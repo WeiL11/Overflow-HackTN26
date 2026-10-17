@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "@radix-ui/themes";
 import { Heart, Search, Leaf, Users, Clock, MapPin } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { APP_NAME, APP_TAGLINE } from "@/config/brand";
@@ -30,10 +30,11 @@ const steps = [
 
 export default function Index() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       <Navbar />
 
-      {/* Hero */}
+      <main className="min-h-0 flex-1 overflow-y-auto">
+        {/* Hero */}
       <section className="hero-gradient py-24 px-4 text-center">
         <div className="container mx-auto max-w-3xl">
           <h1 className="text-4xl md:text-6xl font-heading font-bold text-primary-foreground mb-6 animate-fade-up">
@@ -53,7 +54,7 @@ export default function Index() {
           >
             <Link to="/signup?role=donor">
               <Button
-                size="lg"
+                size="3"
                 className="bg-background text-primary hover:bg-background/90 font-semibold text-base px-8"
               >
                 <Heart className="mr-2 h-5 w-5" /> Donate Food
@@ -61,7 +62,7 @@ export default function Index() {
             </Link>
             <Link to="/signup?role=receiver">
               <Button
-                size="lg"
+                size="3"
                 variant="outline"
                 className="bg-background text-primary border-background hover:bg-background/90 font-semibold text-base px-8"
               >
@@ -122,6 +123,7 @@ export default function Index() {
           © {new Date().getFullYear()} {APP_NAME} — {APP_TAGLINE}
         </p>
       </footer>
+      </main>
     </div>
   );
 }
