@@ -77,7 +77,7 @@ export default function ReceiverDashboard() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('expiry');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const receiverLocation = useReceiverLocation();
-  const youLabel = receiverLocation.source === 'gps' ? 'Your location' : 'Vanderbilt campus';
+  const youLabel = receiverLocation.source === 'default' ? 'Vanderbilt campus' : receiverLocation.source === 'gps' ? 'You are here' : 'You (approx.)';
   const [myRequests, setMyRequests] = useState<Map<string, string>>(new Map());
   const [requesting, setRequesting] = useState<string | null>(null);
   const [requestFormListingId, setRequestFormListingId] = useState<string | null>(null);
@@ -245,8 +245,8 @@ export default function ReceiverDashboard() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm text-muted-foreground">
               <p className="whitespace-nowrap">{filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}</p>
-              <p className="flex items-center gap-1 whitespace-nowrap text-xs">
-                <Navigation className="h-3 w-3" /> Distances from {receiverLocation.source === 'gps' ? 'your location' : 'Vanderbilt campus'}
+              <p className="flex items-center gap-1 text-xs">
+                <Navigation className="h-3 w-3" /> Distances from {receiverLocation.label}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -254,17 +254,21 @@ export default function ReceiverDashboard() {
                 <SegmentedControl.Item value="list"><span className="flex items-center gap-1"><List className="h-3.5 w-3.5" /> List</span></SegmentedControl.Item>
                 <SegmentedControl.Item value="map"><span className="flex items-center gap-1"><MapIcon className="h-3.5 w-3.5" /> Map</span></SegmentedControl.Item>
               </SegmentedControl.Root>
-              <Text as="label" size="2" color="gray" htmlFor="listing-sort" className="whitespace-nowrap">Sort by</Text>
-              <Select.Root value={activeSort} onValueChange={value => setSortOrder(value as SortOrder)}>
-                <Select.Trigger id="listing-sort" variant="soft" color="gray" />
-                <Select.Content>
-                  {(Object.keys(SORT_LABELS) as SortOrder[])
-                    .filter(order => order !== 'match' || showingAi)
-                    .map(order => (
-                      <Select.Item key={order} value={order}>{SORT_LABELS[order]}</Select.Item>
-                    ))}
-                </Select.Content>
-              </Select.Root>
+              {viewMode === 'list' && (
+                <>
+                  <Text as="label" size="2" color="gray" htmlFor="listing-sort" className="whitespace-nowrap">Sort by</Text>
+                  <Select.Root value={activeSort} onValueChange={value => setSortOrder(value as SortOrder)}>
+                    <Select.Trigger id="listing-sort" variant="soft" color="gray" />
+                    <Select.Content>
+                      {(Object.keys(SORT_LABELS) as SortOrder[])
+                        .filter(order => order !== 'match' || showingAi)
+                        .map(order => (
+                          <Select.Item key={order} value={order}>{SORT_LABELS[order]}</Select.Item>
+                        ))}
+                    </Select.Content>
+                  </Select.Root>
+                </>
+              )}
             </div>
           </div>
         )}

@@ -36,6 +36,26 @@ export async function getBrowserPosition(): Promise<LatLng | null> {
   }
 }
 
+// Rough location from the visitor's IP address (city-level, a few miles off), for when GPS
+// isn't available, e.g. on the HTTP live site. Tries two free services; null if both fail.
+export async function getApproximatePosition(): Promise<(LatLng & { city: string | null }) | null> {
+  const services: [string, (body: Record<string, unknown>) => (LatLng & { city: string | null }) | null][] = [
+    ['https://ipwho.is/', body => (body.success === false ? null : { lat: Number(body.latitude), lng: Number(body.longitude), city: (body.city as string) ?? null })],
+    ['https://get.geojs.io/v1/ip/geo.json', body => ({ lat: Number(body.latitude), lng: Number(body.longitude), city: (body.city as string) ?? null })],
+  ];
+  for (const [url, parse] of services) {
+    try {
+      const response = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!response.ok) continue;
+      const position = parse(await response.json());
+      if (position && Number.isFinite(position.lat) && Number.isFinite(position.lng)) return position;
+    } catch {
+      // try the next service
+    }
+  }
+  return null;
+}
+
 // Look up an address with OpenStreetMap Nominatim, preferring results around Nashville.
 export async function geocodeAddress(address: string): Promise<LatLng | null> {
   const query = address.trim();
