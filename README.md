@@ -41,6 +41,7 @@ make setup          # First-time installation and database setup
 make dev            # Start the backend, seed data, and run the frontend
 make check          # Run lint, tests, and the production build
 make backend-stop   # Stop local Supabase
+make ai-server      # Start the photo autofill API (see server/README.md)
 ```
 
 Run `make help` to list every available command:

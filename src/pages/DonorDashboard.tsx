@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import { analyzeFoodPhoto, detectCurrentAddress, resizeImage, toDatetimeLocal } from '@/lib/foodPhoto';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
 import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
 import { Badge, Button, Card, Dialog, Text, TextField, type BadgeProps } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
-import { Plus, Package, MapPin, Trash2, CheckCircle, XCircle, User, Building2 } from 'lucide-react';
+import { Plus, Package, MapPin, Trash2, CheckCircle, XCircle, User, Building2, Camera, Sparkles, Loader2, Check } from 'lucide-react';
 
 interface FoodListing {
   id: string;
@@ -47,10 +48,72 @@ export default function DonorDashboard() {
   const [location, setLocation] = useState('');
   const [expiryTime, setExpiryTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiFilled, setAiFilled] = useState(false);
+  const [locationSource, setLocationSource] = useState<'gps' | 'previous' | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const locationInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
   }, [user, authLoading, navigate]);
+
+  const resetForm = () => {
+    setFoodName('');
+    setQuantity('');
+    setLocation('');
+    setExpiryTime('');
+    setPhotoPreview(null);
+    setAiFilled(false);
+    setLocationSource(null);
+  };
+
+  // Pre-fill the pickup location when the form opens; the donor must confirm it.
+  useEffect(() => {
+    if (!showForm || location) return;
+    let cancelled = false;
+    (async () => {
+      const address = await detectCurrentAddress();
+      if (cancelled) return;
+      if (address) {
+        setLocation(current => current || address);
+        setLocationSource('gps');
+      } else if (listings[0]?.location) {
+        setLocation(current => current || listings[0].location);
+        setLocationSource('previous');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [showForm]);
+
+  const handlePhoto = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file.');
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const image = await resizeImage(file);
+      setPhotoPreview(image);
+      const suggestion = await analyzeFoodPhoto(image);
+      if (!suggestion.isFood) {
+        toast.warn("That doesn't look like food. Try another photo or fill in the form manually.");
+        return;
+      }
+      setFoodName(suggestion.foodName);
+      setQuantity(String(suggestion.quantity));
+      setExpiryTime(toDatetimeLocal(new Date(Date.now() + suggestion.shelfLifeHours * 3_600_000)));
+      setAiFilled(true);
+      toast.success('Details filled in from your photo. Please review them.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Photo analysis failed.');
+    } finally {
+      setAnalyzing(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
 
   const fetchListings = async () => {
     if (!user) return;
@@ -110,6 +173,11 @@ export default function DonorDashboard() {
       toast.error('Quantity must be a positive whole number.');
       return;
     }
+    if (locationSource) {
+      toast.info('Please confirm the pickup location.');
+      locationInputRef.current?.focus();
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.from('food_listings').insert({
       donor_id: user.id,
@@ -123,10 +191,7 @@ export default function DonorDashboard() {
       toast.error(error.message);
     } else {
       toast.success('Food listing added!');
-      setFoodName('');
-      setQuantity('');
-      setLocation('');
-      setExpiryTime('');
+      resetForm();
       setShowForm(false);
       fetchListings();
     }
@@ -333,7 +398,7 @@ export default function DonorDashboard() {
         )}
         </div>
       </main>
-      <Dialog.Root open={showForm} onOpenChange={setShowForm}>
+      <Dialog.Root open={showForm} onOpenChange={open => { setShowForm(open); if (!open) resetForm(); }}>
         <Dialog.Trigger>
           <Button
             size="3"
@@ -348,6 +413,40 @@ export default function DonorDashboard() {
             Share available food with recipients in your community.
           </Dialog.Description>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={e => handlePhoto(e.target.files?.[0])}
+            />
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              disabled={analyzing}
+              className="flex w-full items-center gap-4 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 text-left transition-colors hover:border-primary/60 hover:bg-primary/10 disabled:cursor-wait"
+            >
+              {photoPreview ? (
+                <img src={photoPreview} alt="Food photo" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+              ) : (
+                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Camera className="h-7 w-7 text-primary" />
+                </span>
+              )}
+              <span className="flex-1">
+                <span className="flex items-center gap-1.5 font-medium text-foreground">
+                  {analyzing ? (
+                    <><Loader2 className="h-4 w-4 animate-spin text-primary" /> Analyzing photo…</>
+                  ) : (
+                    <><Sparkles className="h-4 w-4 text-primary" /> {photoPreview ? 'Use a different photo' : 'Snap or upload a photo'}</>
+                  )}
+                </span>
+                <span className="mt-0.5 block text-sm text-muted-foreground">
+                  AI fills in the food name, quantity and how long it stays fresh. You can edit everything.
+                </span>
+              </span>
+            </button>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Text as="label" size="2" weight="medium" htmlFor="foodName">Food Name</Text>
@@ -359,13 +458,37 @@ export default function DonorDashboard() {
               </div>
               <div className="space-y-2">
                 <Text as="label" size="2" weight="medium" htmlFor="location">Pickup Location</Text>
-                <TextField.Root id="location" value={location} onChange={e => setLocation(e.target.value)} required placeholder="e.g. 123 Main St, Downtown" />
+                <TextField.Root
+                  ref={locationInputRef}
+                  id="location"
+                  value={location}
+                  onChange={e => { setLocation(e.target.value); setLocationSource(null); }}
+                  required
+                  placeholder="e.g. 123 Main St, Downtown"
+                  color={locationSource ? 'amber' : undefined}
+                />
+                {locationSource && (
+                  <div className="flex items-center justify-between gap-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      {locationSource === 'gps' ? 'Filled from your current location.' : 'Filled from your last donation.'} Is this right?
+                    </span>
+                    <Button type="button" size="1" variant="soft" color="amber" onClick={() => setLocationSource(null)}>
+                      <Check className="h-3.5 w-3.5" /> Confirm
+                    </Button>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Text as="label" size="2" weight="medium" htmlFor="expiry">Available Until</Text>
-                <TextField.Root id="expiry" type="datetime-local" value={expiryTime} onChange={e => setExpiryTime(e.target.value)} required min={new Date().toISOString().slice(0, 16)} />
+                <TextField.Root id="expiry" type="datetime-local" value={expiryTime} onChange={e => setExpiryTime(e.target.value)} required min={toDatetimeLocal(new Date())} />
               </div>
             </div>
+            {aiFilled && (
+              <Text as="p" size="1" color="gray" className="flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5" /> Suggested by AI from your photo. Please double-check before posting.
+              </Text>
+            )}
             <div className="flex justify-end gap-3 pt-2">
               <Dialog.Close>
                 <Button type="button" variant="outline" disabled={submitting}>Cancel</Button>

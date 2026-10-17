@@ -1,4 +1,4 @@
-.PHONY: help install setup frontend backend backend-stop backend-status db-reset seed dev-accounts check dev
+.PHONY: help install setup frontend ai-server backend backend-stop backend-status db-reset seed dev-accounts check dev
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -10,6 +10,9 @@ setup: install backend seed ## Install dependencies, start the backend, and seed
 
 frontend: ## Start the frontend development server
 	npm run dev -- --host 127.0.0.1
+
+ai-server: ## Start the photo autofill API (needs ~/.oci/config and .env.server)
+	npm run ai-server
 
 backend: ## Start the local Supabase backend
 	npx supabase start
