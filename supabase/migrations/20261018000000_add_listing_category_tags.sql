@@ -2,8 +2,8 @@
 --
 -- Tag vocabulary (kept in sync with server/searchFood.mjs and src/config/foodTaxonomy.ts):
 --   dietary:  vegetarian, vegan, halal, kosher, gluten_free, dairy_free, nut_free
---   prep:     ready_to_eat, needs_cooking, needs_refrigeration, shelf_stable, microwaveable
---   audience: kid_friendly, family_size, high_protein, low_sugar, breakfast, lunch, dinner, snack
+--   temperature: cold (eat as-is), warm (needs cooking or microwaving)
+--   meal size:   snack, small_meal (one person), large_meal (family or group)
 
 ALTER TABLE public.food_listings
   ADD COLUMN category text NOT NULL DEFAULT 'other',

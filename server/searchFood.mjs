@@ -11,8 +11,8 @@ export const CATEGORIES = [
 export const DIETARY_TAGS = ["vegetarian", "vegan", "halal", "kosher", "gluten_free", "dairy_free", "nut_free"];
 export const TAGS = [
   ...DIETARY_TAGS,
-  "ready_to_eat", "needs_cooking", "needs_refrigeration", "shelf_stable", "microwaveable",
-  "kid_friendly", "family_size", "high_protein", "low_sugar", "breakfast", "lunch", "dinner", "snack",
+  "cold", "warm", // cold: eat as-is; warm: needs cooking or microwaving
+  "snack", "small_meal", "large_meal", // small_meal feeds one person, large_meal a family or group
 ];
 
 export const MAX_RESULTS = 10;
@@ -71,7 +71,9 @@ Rules:
   need ranks above ingredients that need cooking. Return an empty list if nothing fits.
 - Use only these categories: ${CATEGORIES.join(", ")}.
 - Use only these tags: ${TAGS.join(", ")}.
-- Only add avoidTags for things the person explicitly rules out (e.g. "I can't cook" -> needs_cooking).
+  "cold" means it can be eaten as-is; "warm" means it needs cooking or microwaving.
+  "small_meal" feeds one person; "large_meal" feeds a family or group; "snack" is a snack.
+- Only add avoidTags for things the person explicitly rules out (e.g. "I can't cook" -> warm).
   Never put dietary tags in avoidTags: vegan food is also vegetarian, and allergies go in mustHaveTags
   (e.g. "nut allergy" -> nut_free).
 
@@ -80,7 +82,7 @@ Reply with ONLY a JSON object, no markdown:
   "summary": string,        // one short sentence restating what they are looking for
   "categories": string[],   // categories that fit the need (may be empty)
   "mustHaveTags": string[], // tags every result should have, e.g. dietary needs
-  "avoidTags": string[],    // tags results must NOT have, e.g. "needs_cooking" if they cannot cook
+  "avoidTags": string[],    // tags results must NOT have, e.g. "warm" if they cannot cook
   "results": [{ "id": "L3", "reason": "short reason it fits, under 15 words" }]
 }
 
@@ -98,7 +100,7 @@ const labelOf = (value) => value.replaceAll("_", " ");
 
 // Turn raw model JSON into a safe response: known ids only, dietary and avoid tags enforced.
 // Models sometimes skip listings that fit, so listings matching the model's own filters
-// (all dietary tags, no avoided tags, one of its categories) are appended after its picks.
+// (all its tags, no avoided tags, one of its categories) are appended after its picks.
 export function normalizeSearchResponse(raw, listings, idMap) {
   const byId = new Map(listings.map((listing) => [listing.id, listing]));
   const categories = pickKnown(raw?.categories, CATEGORIES);
@@ -126,8 +128,7 @@ export function normalizeSearchResponse(raw, listings, idMap) {
     const extras = listings
       .filter((listing) => !seen.has(listing.id) && allowed(listing) && categories.includes(listing.category))
       .map((listing) => ({ listing, hits: preferredTags.filter((tag) => (listing.tags || []).includes(tag)) }))
-      .filter(({ hits }) => preferredTags.length === 0 || hits.length > 0)
-      .sort((a, b) => b.hits.length - a.hits.length);
+      .filter(({ hits }) => hits.length === preferredTags.length);
     for (const { listing, hits } of extras.slice(0, MAX_RESULTS - results.length)) {
       results.push({ id: listing.id, reason: `Also fits: ${[...requiredDietary, ...hits].map(labelOf).join(", ")}` });
     }
@@ -149,16 +150,11 @@ const SYNONYMS = [
   [/gluten|celiac|coeliac/, { tag: "gluten_free", required: true }],
   [/dairy[- ]free|no dairy|lactose/, { tag: "dairy_free", required: true }],
   [/\bnuts?\b|peanut|nut[- ]free|nut allerg/, { tag: "nut_free", required: true }],
-  [/\bno cook|without cooking|can'?t cook|ready to eat|no kitchen\b/, { tag: "ready_to_eat" }],
-  [/microwave/, { tag: "microwaveable" }],
-  [/\bkids?\b|child|toddler/, { tag: "kid_friendly" }],
-  [/\bbab(y|ies)|infant\b/, { category: "baby_kids" }],
-  [/family|people|group|crowd/, { tag: "family_size" }],
-  [/protein/, { tag: "high_protein" }],
-  [/sugar|diabet/, { tag: "low_sugar" }],
-  [/breakfast/, { tag: "breakfast" }],
-  [/lunch/, { tag: "lunch" }],
-  [/dinner|supper/, { tag: "dinner" }],
+  [/\bno cook|without cooking|can'?t cook|ready to eat|no kitchen|no microwave|\bcold\b/, { tag: "cold" }],
+  [/\bhot\b|\bwarm\b|\bheat|(?<!no )microwave/, { tag: "warm" }],
+  [/\bkids?\b|child|toddler|\bbab(y|ies)|infant\b/, { category: "baby_kids" }],
+  [/family|people|group|crowd|party|\bfor (3|4|5|6|7|8|9|10)\b/, { tag: "large_meal" }],
+  [/just me|myself|one person|single|\bsolo\b/, { tag: "small_meal" }],
   [/snack/, { tag: "snack" }],
   [/fruit|vegetable|produce|salad/, { category: "produce" }],
   [/bread|bak|pastr|bagel|muffin/, { category: "bakery" }],

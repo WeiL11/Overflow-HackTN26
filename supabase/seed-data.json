@@ -38,13 +38,13 @@
       "foodName": "Mixed salad greens",
       "category": "produce",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "needs_refrigeration",
-        "lunch"
+        "cold",
+        "small_meal"
       ],
       "description": "Bagged spring mix and romaine, washed and ready for salads.",
       "quantity": 10,
@@ -58,15 +58,13 @@
       "foodName": "Bananas (bunches)",
       "category": "produce",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "ready_to_eat",
-        "kid_friendly",
-        "snack",
-        "breakfast"
+        "cold",
+        "snack"
       ],
       "description": "Ripe bananas in bunches of 5-6.",
       "quantity": 20,
@@ -80,13 +78,12 @@
       "foodName": "Gala apples",
       "category": "produce",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "ready_to_eat",
-        "kid_friendly",
+        "cold",
         "snack"
       ],
       "description": "Crisp apples, about 3 lb bags.",
@@ -101,14 +98,13 @@
       "foodName": "Sweet potatoes",
       "category": "produce",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "needs_cooking",
-        "dinner",
-        "family_size"
+        "warm",
+        "large_meal"
       ],
       "description": "5 lb bags of sweet potatoes, great roasted or mashed.",
       "quantity": 15,
@@ -122,16 +118,13 @@
       "foodName": "Carrots and celery snack packs",
       "category": "produce",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "ready_to_eat",
-        "needs_refrigeration",
-        "kid_friendly",
-        "snack",
-        "low_sugar"
+        "cold",
+        "snack"
       ],
       "description": "Single-serve cut carrots and celery sticks.",
       "quantity": 24,
@@ -149,14 +142,13 @@
       "status": "available",
       "category": "produce",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "needs_cooking",
-        "family_size",
-        "dinner"
+        "warm",
+        "large_meal"
       ],
       "description": "Seasonal mix of zucchini, tomatoes, peppers and onions."
     },
@@ -166,14 +158,12 @@
       "foodName": "Strawberries",
       "category": "produce",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "ready_to_eat",
-        "needs_refrigeration",
-        "kid_friendly",
+        "cold",
         "snack"
       ],
       "description": "1 lb clamshells, best eaten within a day or two.",
@@ -188,13 +178,12 @@
       "foodName": "Whole wheat sandwich bread",
       "category": "bakery",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "dairy_free",
         "nut_free",
-        "ready_to_eat",
-        "breakfast",
-        "lunch"
+        "cold",
+        "large_meal"
       ],
       "description": "Sliced whole wheat loaves baked this morning.",
       "quantity": 20,
@@ -211,8 +200,8 @@
         "vegetarian",
         "dairy_free",
         "nut_free",
-        "ready_to_eat",
-        "breakfast"
+        "cold",
+        "small_meal"
       ],
       "description": "Plain, sesame and everything bagels.",
       "quantity": 36,
@@ -228,9 +217,7 @@
       "tags": [
         "vegetarian",
         "nut_free",
-        "ready_to_eat",
-        "kid_friendly",
-        "breakfast",
+        "cold",
         "snack"
       ],
       "description": "Individually wrapped muffins (contain milk and egg).",
@@ -249,9 +236,8 @@
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "ready_to_eat",
-        "breakfast",
-        "lunch"
+        "cold",
+        "large_meal"
       ],
       "description": "Certified gluten-free sliced bread.",
       "quantity": 8,
@@ -266,8 +252,7 @@
       "category": "bakery",
       "tags": [
         "vegetarian",
-        "ready_to_eat",
-        "breakfast",
+        "cold",
         "snack"
       ],
       "description": "Buttery croissants with almond filling (contains tree nuts).",
@@ -286,8 +271,8 @@
         "kosher",
         "dairy_free",
         "nut_free",
-        "ready_to_eat",
-        "family_size"
+        "cold",
+        "large_meal"
       ],
       "description": "Braided kosher challah loaves.",
       "quantity": 6,
@@ -303,10 +288,8 @@
       "tags": [
         "vegetarian",
         "nut_free",
-        "needs_refrigeration",
-        "microwaveable",
-        "family_size",
-        "dinner"
+        "warm",
+        "large_meal"
       ],
       "description": "Half-pans of spinach and ricotta lasagna, feeds 6-8 each.",
       "quantity": 6,
@@ -324,11 +307,8 @@
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "needs_refrigeration",
-        "microwaveable",
-        "high_protein",
-        "lunch",
-        "dinner"
+        "warm",
+        "small_meal"
       ],
       "description": "Halal grilled chicken over basmati rice with vegetables.",
       "quantity": 20,
@@ -342,15 +322,13 @@
       "foodName": "Black bean and quinoa salad",
       "category": "prepared_meals",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "ready_to_eat",
-        "needs_refrigeration",
-        "high_protein",
-        "lunch"
+        "cold",
+        "small_meal"
       ],
       "description": "Cold salad with lime dressing, single-serve containers.",
       "quantity": 15,
@@ -366,10 +344,8 @@
       "tags": [
         "dairy_free",
         "nut_free",
-        "ready_to_eat",
-        "needs_refrigeration",
-        "high_protein",
-        "lunch"
+        "cold",
+        "small_meal"
       ],
       "description": "Wrapped turkey and lettuce sandwiches on wheat.",
       "quantity": 25,
@@ -383,14 +359,13 @@
       "foodName": "Vegetable curry with rice",
       "category": "prepared_meals",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "halal",
         "gluten_free",
         "dairy_free",
-        "needs_refrigeration",
-        "microwaveable",
-        "dinner"
+        "warm",
+        "small_meal"
       ],
       "description": "Mild chickpea and potato curry with jasmine rice.",
       "quantity": 18,
@@ -406,11 +381,8 @@
       "tags": [
         "vegetarian",
         "nut_free",
-        "needs_refrigeration",
-        "microwaveable",
-        "kid_friendly",
-        "family_size",
-        "dinner"
+        "warm",
+        "large_meal"
       ],
       "description": "Baked mac and cheese, each pan serves 6.",
       "quantity": 5,
@@ -427,10 +399,8 @@
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "needs_refrigeration",
-        "microwaveable",
-        "high_protein",
-        "dinner"
+        "warm",
+        "small_meal"
       ],
       "description": "Quart containers of beef and bean chili.",
       "quantity": 16,
@@ -448,10 +418,8 @@
       "status": "requested",
       "category": "prepared_meals",
       "tags": [
-        "needs_refrigeration",
-        "microwaveable",
-        "lunch",
-        "dinner"
+        "warm",
+        "small_meal"
       ],
       "description": "Assorted boxed lunches from today's catering event."
     },
@@ -461,12 +429,12 @@
       "foodName": "Falafel wraps",
       "category": "prepared_meals",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "halal",
         "dairy_free",
-        "ready_to_eat",
-        "lunch"
+        "cold",
+        "small_meal"
       ],
       "description": "Falafel, hummus and veggies in pita (contains sesame).",
       "quantity": 14,
@@ -482,9 +450,8 @@
       "tags": [
         "vegetarian",
         "dairy_free",
-        "needs_refrigeration",
-        "microwaveable",
-        "dinner"
+        "warm",
+        "small_meal"
       ],
       "description": "Rice noodles with tofu and egg (contains peanuts).",
       "quantity": 10,
@@ -501,10 +468,8 @@
         "vegetarian",
         "gluten_free",
         "nut_free",
-        "needs_cooking",
-        "needs_refrigeration",
-        "high_protein",
-        "breakfast"
+        "warm",
+        "large_meal"
       ],
       "description": "Grade A large eggs, cartons of 12.",
       "quantity": 30,
@@ -521,11 +486,7 @@
         "vegetarian",
         "gluten_free",
         "nut_free",
-        "ready_to_eat",
-        "needs_refrigeration",
-        "high_protein",
-        "kid_friendly",
-        "breakfast",
+        "cold",
         "snack"
       ],
       "description": "Single-serve vanilla and plain Greek yogurt.",
@@ -543,10 +504,7 @@
         "vegetarian",
         "gluten_free",
         "nut_free",
-        "needs_refrigeration",
-        "kid_friendly",
-        "family_size",
-        "breakfast"
+        "cold"
       ],
       "description": "Gallon jugs of whole milk.",
       "quantity": 12,
@@ -563,7 +521,8 @@
         "vegetarian",
         "gluten_free",
         "nut_free",
-        "needs_refrigeration"
+        "cold",
+        "small_meal"
       ],
       "description": "8 oz bags of shredded cheddar.",
       "quantity": 20,
@@ -581,11 +540,8 @@
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "needs_cooking",
-        "needs_refrigeration",
-        "high_protein",
-        "dinner",
-        "family_size"
+        "warm",
+        "large_meal"
       ],
       "description": "Family packs (about 3 lb) of halal chicken thighs.",
       "quantity": 10,
@@ -602,9 +558,8 @@
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "needs_cooking",
-        "high_protein",
-        "dinner"
+        "warm",
+        "large_meal"
       ],
       "description": "2 lb bags of individually frozen fillets; keep frozen.",
       "quantity": 12,
@@ -621,10 +576,8 @@
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "needs_cooking",
-        "needs_refrigeration",
-        "high_protein",
-        "dinner"
+        "warm",
+        "small_meal"
       ],
       "description": "1 lb packs of lean ground turkey.",
       "quantity": 15,
@@ -638,15 +591,15 @@
       "foodName": "Canned black beans",
       "category": "pantry",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "halal",
         "kosher",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "high_protein"
+        "warm",
+        "small_meal"
       ],
       "description": "15 oz cans, low sodium.",
       "quantity": 60,
@@ -660,16 +613,15 @@
       "foodName": "Brown rice (2 lb bags)",
       "category": "pantry",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "halal",
         "kosher",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "needs_cooking",
-        "family_size"
+        "warm",
+        "large_meal"
       ],
       "description": "Long-grain brown rice.",
       "quantity": 30,
@@ -683,15 +635,12 @@
       "foodName": "Spaghetti and marinara kits",
       "category": "pantry",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "needs_cooking",
-        "family_size",
-        "dinner",
-        "kid_friendly"
+        "warm",
+        "large_meal"
       ],
       "description": "1 lb pasta plus a jar of marinara, feeds 4.",
       "quantity": 20,
@@ -705,13 +654,12 @@
       "foodName": "Peanut butter jars",
       "category": "pantry",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
-        "shelf_stable",
-        "high_protein",
-        "kid_friendly"
+        "cold",
+        "snack"
       ],
       "description": "16 oz creamy peanut butter (contains peanuts).",
       "quantity": 25,
@@ -725,14 +673,12 @@
       "foodName": "Oatmeal canisters",
       "category": "pantry",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "needs_cooking",
-        "breakfast",
-        "low_sugar"
+        "warm",
+        "large_meal"
       ],
       "description": "Old-fashioned rolled oats, 42 oz.",
       "quantity": 18,
@@ -748,9 +694,8 @@
       "tags": [
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "microwaveable",
-        "lunch"
+        "warm",
+        "small_meal"
       ],
       "description": "Ready-to-heat soup cans.",
       "quantity": 40,
@@ -764,16 +709,15 @@
       "foodName": "Lentils (1 lb bags)",
       "category": "pantry",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "halal",
         "kosher",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "needs_cooking",
-        "high_protein"
+        "warm",
+        "large_meal"
       ],
       "description": "Dry green lentils.",
       "quantity": 22,
@@ -789,9 +733,7 @@
       "tags": [
         "vegetarian",
         "dairy_free",
-        "shelf_stable",
-        "ready_to_eat",
-        "kid_friendly",
+        "cold",
         "snack"
       ],
       "description": "Oat and honey bars (made in a facility with tree nuts).",
@@ -806,13 +748,11 @@
       "foodName": "Trail mix packs",
       "category": "snacks",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
-        "shelf_stable",
-        "ready_to_eat",
-        "high_protein",
+        "cold",
         "snack"
       ],
       "description": "Peanuts, almonds, raisins and seeds.",
@@ -827,13 +767,11 @@
       "foodName": "Pretzel snack bags",
       "category": "snacks",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "ready_to_eat",
-        "kid_friendly",
+        "cold",
         "snack"
       ],
       "description": "Single-serve mini pretzels.",
@@ -848,16 +786,13 @@
       "foodName": "Applesauce pouches",
       "category": "snacks",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "ready_to_eat",
-        "kid_friendly",
-        "snack",
-        "low_sugar"
+        "cold",
+        "snack"
       ],
       "description": "Unsweetened squeeze pouches.",
       "quantity": 48,
@@ -871,14 +806,12 @@
       "foodName": "Bottled water cases",
       "category": "beverages",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "ready_to_eat",
-        "family_size"
+        "cold"
       ],
       "description": "24-packs of 16.9 oz bottled water.",
       "quantity": 20,
@@ -892,14 +825,12 @@
       "foodName": "Orange juice cartons",
       "category": "beverages",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "needs_refrigeration",
-        "kid_friendly",
-        "breakfast"
+        "cold"
       ],
       "description": "52 oz cartons of 100% orange juice.",
       "quantity": 16,
@@ -913,12 +844,11 @@
       "foodName": "Oat milk",
       "category": "beverages",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "breakfast"
+        "cold"
       ],
       "description": "Shelf-stable oat milk, 32 oz.",
       "quantity": 18,
@@ -935,7 +865,7 @@
         "vegetarian",
         "gluten_free",
         "nut_free",
-        "shelf_stable"
+        "warm"
       ],
       "description": "Sealed 12 oz cans of powdered infant formula.",
       "quantity": 10,
@@ -949,14 +879,13 @@
       "foodName": "Baby food jars",
       "category": "baby_kids",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "shelf_stable",
-        "ready_to_eat",
-        "kid_friendly"
+        "cold",
+        "small_meal"
       ],
       "description": "Stage 2 fruit and vegetable purees.",
       "quantity": 36,
@@ -971,10 +900,8 @@
       "category": "baby_kids",
       "tags": [
         "nut_free",
-        "ready_to_eat",
-        "needs_refrigeration",
-        "kid_friendly",
-        "lunch"
+        "cold",
+        "small_meal"
       ],
       "description": "Ham and cheese sandwich, fruit cup and milk.",
       "quantity": 20,
@@ -988,14 +915,13 @@
       "foodName": "Frozen mixed vegetables",
       "category": "frozen",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "gluten_free",
         "dairy_free",
         "nut_free",
-        "needs_cooking",
-        "microwaveable",
-        "dinner"
+        "warm",
+        "small_meal"
       ],
       "description": "1 lb bags of corn, peas, carrots and green beans.",
       "quantity": 25,
@@ -1011,10 +937,8 @@
       "tags": [
         "vegetarian",
         "nut_free",
-        "needs_cooking",
-        "kid_friendly",
-        "family_size",
-        "dinner"
+        "warm",
+        "large_meal"
       ],
       "description": "12-inch cheese pizzas; keep frozen.",
       "quantity": 12,
@@ -1028,15 +952,12 @@
       "foodName": "Frozen veggie burgers",
       "category": "frozen",
       "tags": [
-        "vegan",
         "vegetarian",
+        "vegan",
         "dairy_free",
         "nut_free",
-        "needs_cooking",
-        "microwaveable",
-        "high_protein",
-        "lunch",
-        "dinner"
+        "warm",
+        "large_meal"
       ],
       "description": "Boxes of 4 plant-based patties.",
       "quantity": 16,
