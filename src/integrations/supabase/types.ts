@@ -17,6 +17,8 @@ export type Database = {
       food_listings: {
         Row: {
           category: string
+          photo_path: string | null
+          food_analysis: Json | null
           created_at: string
           description: string | null
           donor_id: string
@@ -32,6 +34,8 @@ export type Database = {
         }
         Insert: {
           category?: string
+          photo_path?: string | null
+          food_analysis?: Json | null
           created_at?: string
           description?: string | null
           donor_id: string
@@ -47,6 +51,8 @@ export type Database = {
         }
         Update: {
           category?: string
+          photo_path?: string | null
+          food_analysis?: Json | null
           created_at?: string
           description?: string | null
           donor_id?: string

@@ -4,9 +4,9 @@
 Llama 4 Scout):
 
 - `POST /api/analyze-food` powers the "Snap or upload a photo" button on the donor form. It returns
-  suggestions for **Food Name**, **Quantity** and **Available Until**. Pickup Location is filled in the
-  browser from the donor's current location (HTTPS or localhost only) or their last donation, and the donor
-  must confirm it.
+  suggestions for **Food Name** and a visible **Quantity** estimate. Donors enter **Available Until**
+  themselves; the model does not assess safe expiry. Pickup Location is filled in the browser from the
+  donor's current location (HTTPS or localhost only) or their last donation, and the donor must confirm it.
 - `POST /api/search-food` powers **Ask AI** in the receiver's Search Food dialog. It loads the available
   listings the user can see, sends them to the model as a compact catalog with the user's request, and
   returns ranked listing ids with a short reason each. Dietary tags the user asks for and tags to avoid are
@@ -29,8 +29,8 @@ Only signed-in users can call the endpoints; the server checks their Supabase ac
 3. Run the API next to the frontend:
 
    ```bash
-   make ai-server   # or: npm run ai-server
-   make frontend
+   make dev         # starts configured AI services and frontend together
+   # Or run make ai-server and make frontend in separate terminals
    ```
 
    Vite proxies `/api` to `http://127.0.0.1:8787`.

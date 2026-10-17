@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import ListingPhoto from '@/components/ListingPhoto';
+import type { Json } from '@/integrations/supabase/types';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
 import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
@@ -22,6 +24,8 @@ const AI_EXAMPLES = [
 ];
 
 interface FoodListing {
+  photo_path: string | null;
+  food_analysis: Json | null;
   id: string;
   food_name: string;
   quantity: number;
@@ -302,6 +306,7 @@ export default function ReceiverDashboard() {
               return (
                 <Card key={item.id} id={`listing-${item.id}`} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">
+                    <ListingPhoto path={item.photo_path} analysis={item.food_analysis} name={item.food_name} />
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-2 flex-1">
                         <div className="flex flex-wrap items-center gap-2">

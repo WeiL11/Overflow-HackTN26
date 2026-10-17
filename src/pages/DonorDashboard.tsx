@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { analyzeFoodPhoto, detectCurrentAddress, resizeImage, toDatetimeLocal } from '@/lib/foodPhoto';
 import { geocodeAddress, type LatLng } from '@/lib/geo';
+import ListingPhoto from '@/components/ListingPhoto';
+import type { Json } from '@/integrations/supabase/types';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
 import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
@@ -12,6 +14,8 @@ import { toast } from 'react-toastify';
 import { Plus, Package, MapPin, Trash2, CheckCircle, XCircle, User, Building2, Camera, Sparkles, Loader2, Check } from 'lucide-react';
 
 interface FoodListing {
+  photo_path: string | null;
+  food_analysis: Json | null;
   id: string;
   food_name: string;
   quantity: number;
@@ -49,8 +53,11 @@ export default function DonorDashboard() {
   const [location, setLocation] = useState('');
   const [expiryTime, setExpiryTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [analysis, setAnalysis] = useState<import('@/integrations/supabase/types').Json | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState('');
   const [aiFilled, setAiFilled] = useState(false);
   const [locationSource, setLocationSource] = useState<'gps' | 'previous' | null>(null);
   const [gpsFill, setGpsFill] = useState<{ address: string; position: LatLng } | null>(null);
@@ -67,7 +74,10 @@ export default function DonorDashboard() {
     setLocation('');
     setExpiryTime('');
     setPhotoPreview(null);
+    setPhoto(null);
+    setAnalysis(null);
     setAiFilled(false);
+    setAnalysisError('');
     setLocationSource(null);
     setGpsFill(null);
   };
@@ -91,28 +101,40 @@ export default function DonorDashboard() {
     return () => { cancelled = true; };
   }, [showForm]);
 
-  const handlePhoto = async (file: File | undefined) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please choose an image file.');
-      return;
-    }
+  const runAnalysis = async (image: string) => {
     setAnalyzing(true);
+    setAnalysisError('');
+    setAnalysis(null);
+    setAiFilled(false);
     try {
-      const image = await resizeImage(file);
-      setPhotoPreview(image);
       const suggestion = await analyzeFoodPhoto(image);
+      setAnalysis({ ...suggestion });
       if (!suggestion.isFood) {
-        toast.warn("That doesn't look like food. Try another photo or fill in the form manually.");
+        setAnalysisError("No recognizable food detected. Try a clearer photo or enter details manually.");
         return;
       }
       setFoodName(suggestion.foodName);
-      setQuantity(String(suggestion.quantity));
-      setExpiryTime(toDatetimeLocal(new Date(Date.now() + suggestion.shelfLifeHours * 3_600_000)));
+      if (suggestion.quantity !== null) setQuantity(String(suggestion.quantity));
       setAiFilled(true);
-      toast.success('Details filled in from your photo. Please review them.');
+      toast.success('Photo analyzed. Review the suggested details.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Photo analysis failed.');
+      setAnalysisError(error instanceof Error ? error.message : 'Photo analysis failed.');
+    } finally { setAnalyzing(false); }
+  };
+
+  const handlePhoto = async (file: File | undefined) => {
+    if (!file || analyzing || submitting) return;
+    setAnalysisError('');
+    setAnalyzing(true);
+    try {
+      const image = await resizeImage(file);
+      setAnalysis(null); setAiFilled(false);
+      setPhotoPreview(image);
+      const resizedPhoto = await (await fetch(image)).blob();
+      setPhoto(new File([resizedPhoto], 'food.jpg', { type: 'image/jpeg' }));
+      await runAnalysis(image);
+    } catch (error) {
+      setAnalysisError(error instanceof Error ? error.message : 'Could not read this photo.');
     } finally {
       setAnalyzing(false);
       if (photoInputRef.current) photoInputRef.current.value = '';
@@ -171,7 +193,11 @@ export default function DonorDashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || submitting || analyzing) return;
+    if (!Number.isFinite(new Date(expiryTime).getTime()) || new Date(expiryTime).getTime() <= Date.now()) {
+      toast.error("Choose a future availability time.");
+      return;
+    }
     const parsedQuantity = Number.parseInt(quantity, 10);
     if (!Number.isInteger(parsedQuantity) || parsedQuantity <= 0 || Number(quantity) !== parsedQuantity) {
       toast.error('Quantity must be a positive whole number.');
@@ -183,26 +209,33 @@ export default function DonorDashboard() {
       return;
     }
     setSubmitting(true);
-    // Pin the listing on the receivers' map: GPS if the donor kept the detected address, else look it up.
-    const position = gpsFill?.address === location ? gpsFill.position : await geocodeAddress(location);
-    const { error } = await supabase.from('food_listings').insert({
-      donor_id: user.id,
-      food_name: foodName,
-      quantity: parsedQuantity,
-      location,
-      latitude: position?.lat ?? null,
-      longitude: position?.lng ?? null,
-      expiry_time: new Date(expiryTime).toISOString(),
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
+    let photoPath: string | null = null;
+    try {
+      if (photo) {
+        const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[photo.type];
+        photoPath = `${user.id}/${crypto.randomUUID()}.${extension}`;
+        const { error } = await supabase.storage.from('food-photos').upload(photoPath, photo);
+        if (error) throw error;
+      }
+      // Pin the listing on the receivers' map: GPS if the donor kept the detected address, else look it up.
+      const position = gpsFill?.address === location ? gpsFill.position : await geocodeAddress(location);
+      const { error } = await supabase.from('food_listings').insert({
+        donor_id: user.id, food_name: foodName, quantity: parsedQuantity, location,
+        latitude: position?.lat ?? null,
+        longitude: position?.lng ?? null,
+        expiry_time: new Date(expiryTime).toISOString(),
+        photo_path: photoPath,
+        food_analysis: analysis,
+      });
+      if (error) throw error;
       toast.success('Food listing added!');
       resetForm();
       setShowForm(false);
       fetchListings();
-    }
+    } catch (error) {
+      if (photoPath) await supabase.storage.from('food-photos').remove([photoPath]);
+      toast.error(error && typeof error === 'object' && 'message' in error ? String(error.message) : 'Could not save listing. Please retry.');
+    } finally { setSubmitting(false); }
   };
 
   const handleDelete = async (id: string) => {
@@ -316,6 +349,7 @@ export default function DonorDashboard() {
               return (
                 <Card key={item.id} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">
+                    <ListingPhoto path={item.photo_path} analysis={item.food_analysis} name={item.food_name} />
                     <div className="flex items-start justify-between">
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
@@ -406,10 +440,11 @@ export default function DonorDashboard() {
         )}
         </div>
       </main>
-      <Dialog.Root open={showForm} onOpenChange={open => { setShowForm(open); if (!open) resetForm(); }}>
+      <Dialog.Root open={showForm} onOpenChange={open => { if (submitting || analyzing) return; setShowForm(open); if (!open) resetForm(); }}>
         <Dialog.Trigger>
           <Button
             size="3"
+            disabled={submitting || analyzing}
             className="fixed bottom-6 right-6 z-[100] rounded-full px-5 shadow-xl"
           >
             <Plus className="h-5 w-5" /> Add Food
@@ -424,7 +459,9 @@ export default function DonorDashboard() {
             <input
               ref={photoInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
+              aria-label="Food photo"
+              disabled={submitting || analyzing}
               capture="environment"
               className="hidden"
               onChange={e => handlePhoto(e.target.files?.[0])}
@@ -432,7 +469,7 @@ export default function DonorDashboard() {
             <button
               type="button"
               onClick={() => photoInputRef.current?.click()}
-              disabled={analyzing}
+              disabled={submitting || analyzing}
               className="flex w-full items-center gap-4 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 text-left transition-colors hover:border-primary/60 hover:bg-primary/10 disabled:cursor-wait"
             >
               {photoPreview ? (
@@ -451,10 +488,19 @@ export default function DonorDashboard() {
                   )}
                 </span>
                 <span className="mt-0.5 block text-sm text-muted-foreground">
-                  AI fills in the food name, quantity and how long it stays fresh. You can edit everything.
+                  AI suggests food details. Review all suggestions and confirm quantity and availability. Photos may be sent to Google Gemini.
                 </span>
               </span>
             </button>
+            {analysisError && <p role="alert" className="text-sm text-red-600">{analysisError}</p>}
+            {photoPreview && <div className="flex gap-3">
+              <Button type="button" variant="soft" disabled={analyzing || submitting} onClick={() => runAnalysis(photoPreview)}>Retry analysis</Button>
+              <Button type="button" variant="outline" disabled={analyzing || submitting} onClick={() => {
+                setPhoto(null); setPhotoPreview(null); setAnalysis(null); setAiFilled(false); setAnalysisError('');
+              }}>Remove photo</Button>
+            </div>}
+            {analysis && typeof analysis === 'object' && !Array.isArray(analysis) && typeof analysis.description === 'string' && <p role="status" className="text-sm text-muted-foreground">{analysis.description}</p>}
+            <p className="text-xs text-muted-foreground">JPEG, PNG, or WebP, up to 5 MB. A photo cannot confirm food safety, allergens, or expiry. Set availability yourself.</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Text as="label" size="2" weight="medium" htmlFor="foodName">Food Name</Text>
@@ -499,9 +545,9 @@ export default function DonorDashboard() {
             )}
             <div className="flex justify-end gap-3 pt-2">
               <Dialog.Close>
-                <Button type="button" variant="outline" disabled={submitting}>Cancel</Button>
+                <Button type="button" variant="outline" disabled={submitting || analyzing}>Cancel</Button>
               </Dialog.Close>
-              <Button type="submit" disabled={submitting}>{submitting ? 'Adding...' : 'Add Listing'}</Button>
+              <Button type="submit" disabled={submitting || analyzing}>{submitting ? 'Adding...' : 'Add Listing'}</Button>
             </div>
           </form>
         </Dialog.Content>
