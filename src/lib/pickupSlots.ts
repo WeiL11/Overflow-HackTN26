@@ -102,3 +102,25 @@ export const validatePickupBlocks = (blocks: AvailabilityBlock[], now = Date.now
   }
   return null;
 };
+
+const QUARTER_MS = PickupIntervalMinutes.Fifteen * 60 * 1000;
+
+// Default pickup window for a new listing: from the next quarter hour until the
+// expiration (rounded down to a quarter hour). Empty when less than 15 minutes fit.
+export const defaultPickupBlocks = (expiry: string, now = Date.now()): AvailabilityBlock[] => {
+  const start = Math.ceil(now / QUARTER_MS) * QUARTER_MS;
+  const end = Math.floor(new Date(expiry).getTime() / QUARTER_MS) * QUARTER_MS;
+  if (!Number.isFinite(end) || end - start < QUARTER_MS) return [];
+  return [{ startsAt: new Date(start).toISOString(), endsAt: new Date(end).toISOString() }];
+};
+
+// Blocks chosen a while ago may have started already: move their start to the next
+// quarter hour and drop any that no longer leave 15 minutes.
+export const trimStartedPickupBlocks = (blocks: AvailabilityBlock[], now = Date.now()): AvailabilityBlock[] => {
+  const earliest = Math.ceil(now / QUARTER_MS) * QUARTER_MS;
+  return blocks.flatMap(block => {
+    const start = Math.max(new Date(block.startsAt).getTime(), earliest);
+    const end = new Date(block.endsAt).getTime();
+    return end - start >= QUARTER_MS ? [{ startsAt: new Date(start).toISOString(), endsAt: block.endsAt }] : [];
+  });
+};
