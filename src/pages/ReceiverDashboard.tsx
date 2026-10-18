@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import ListingPhoto from '@/components/ListingPhoto';
 import Navbar from '@/components/Navbar';
@@ -14,7 +14,7 @@ import { DIETARY_TAGS, categoryLabel, tagLabel } from '@/config/foodTaxonomy';
 import { distanceMiles, formatMiles, toLatLng } from '@/lib/geo';
 import { useReceiverLocation } from '@/hooks/use-receiver-location';
 import FoodMap, { type MapListing } from '@/components/FoodMap';
-import { Badge, Button, Card, SegmentedControl, Select, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
+import { Badge, Button, Card, Callout, SegmentedControl, Select, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import { Package, MapPin, Search, CheckCircle, Sparkles, Loader2, X, List, Map as MapIcon, Navigation } from 'lucide-react';
 import { errorMessage } from '@/lib/errors';
@@ -207,6 +207,8 @@ const ReceiverDashboard = () => {
 
 
   const recipientName = profile?.full_name?.split(' ')[0] || 'there';
+  // Recipients and NGOs can request food; donors can browse but not request (reserve_food checks the role).
+  const canRequest = profile?.role === 'receiver' || profile?.role === 'ngo';
 
   if (authLoading) return null;
 
@@ -220,6 +222,15 @@ const ReceiverDashboard = () => {
           <h1 className="text-3xl font-heading font-bold text-foreground">Hi, {recipientName}</h1>
           <p className="mt-1 text-muted-foreground">Find fresh food available in your community.</p>
         </section>
+
+        {profile && !canRequest && (
+          <Callout.Root color="amber" className="mb-6">
+            <Callout.Text>
+              You're signed in as a donor, so you can browse but not request food.{' '}
+              <Link to="/donor" className="font-medium underline">Go to your donor dashboard</Link> to post food.
+            </Callout.Text>
+          </Callout.Root>
+        )}
 
         {showingAi && aiResult && (
           <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
@@ -275,7 +286,7 @@ const ReceiverDashboard = () => {
           </div>
         ) : viewMode === 'map' ? (
           <div className="space-y-2">
-            <FoodMap listings={mapListings} you={receiverLocation.position} youLabel={youLabel} onRequest={requestFromMap} />
+            <FoodMap listings={mapListings} you={receiverLocation.position} youLabel={youLabel} onRequest={canRequest ? requestFromMap : undefined} />
             {mapListings.length < filtered.length && (
               <p className="text-xs text-muted-foreground">
                 {filtered.length - mapListings.length} {filtered.length - mapListings.length === 1 ? 'listing has' : 'listings have'} no map location; switch to List to see {filtered.length - mapListings.length === 1 ? 'it' : 'them'}.
@@ -356,7 +367,7 @@ const ReceiverDashboard = () => {
                             )}
                             {requestStatus === 'completed' && <Badge color="green" variant="solid">Done</Badge>}
                           </div>
-                        ) : (
+                        ) : canRequest && (
                           <Button
                             size="2"
                             disabled={requesting === item.id}

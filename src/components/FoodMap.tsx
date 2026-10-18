@@ -22,7 +22,8 @@ interface FoodMapProps {
   listings: MapListing[];
   you: LatLng;
   youLabel: string;
-  onRequest: (listingId: string) => void;
+  // Omitted when the viewer can't request food (e.g. a donor browsing).
+  onRequest?: (listingId: string) => void;
 }
 
 const NEARBY_MILES = 1.5;
@@ -77,7 +78,7 @@ export default function FoodMap({ listings, you, youLabel, onRequest }: FoodMapP
                         <p className="text-xs text-gray-500">{categoryLabel(listing.category)} · {listing.quantity} items</p>
                         <ExpiryCountdown expiryTime={listing.expiry_time} />
                       </div>
-                      <Button size="1" onClick={() => onRequest(listing.id)}>Request</Button>
+                      {onRequest && <Button size="1" onClick={() => onRequest(listing.id)}>Request</Button>}
                     </li>
                   ))}
                 </ul>

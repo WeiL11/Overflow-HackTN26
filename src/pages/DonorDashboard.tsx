@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { geocodeAddress, type LatLng } from '@/lib/geo';
 import ListingPhoto from '@/components/ListingPhoto';
@@ -12,7 +12,7 @@ import { donationStage } from '@/lib/listingStage';
 import AppModal, { ModalClose } from '@/components/AppModal';
 import type { FoodListing, FoodRequest, ProfileSummary } from '@/types/food';
 import { advanceFoodRequest, createFoodListing, deleteFoodListing, getDonorListings, getProfilesByUserIds, getRequestsForListings, rejectFoodRequest } from '@/services/food';
-import { Badge, Button, Card, Text, TextArea, TextField, type BadgeProps } from '@radix-ui/themes';
+import { Badge, Button, Card, Callout, Text, TextArea, TextField, type BadgeProps } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import { Plus, Package, MapPin, Trash2, CheckCircle, XCircle, User, Building2, Camera, Sparkles, Loader2, Check } from 'lucide-react';
 import { errorMessage } from '@/lib/errors';
@@ -288,6 +288,8 @@ const DonorDashboard = () => {
   };
 
   const donorName = profile?.full_name?.split(' ')[0] || 'there';
+  // Only donor accounts can post food (the photo bucket's upload policy checks the role too).
+  const canDonate = profile?.role === 'donor';
   const availableListings = listings.filter(item => item.status === 'available').length;
   const pendingRequestCount = requests.filter(request => request.status === 'pending').length;
 
@@ -307,6 +309,15 @@ const DonorDashboard = () => {
             <p className="mt-1 text-primary-foreground/85">Manage donations and respond to community requests.</p>
           </div>
         </section>
+
+        {profile && !canDonate && (
+          <Callout.Root color="amber" className="mb-6">
+            <Callout.Text>
+              Posting food needs a donor account. You're signed in as a {profile.role === 'ngo' ? 'NGO' : 'recipient'}:{' '}
+              <Link to="/receiver" className="font-medium underline">find food instead</Link>, or sign up for a donor account to donate.
+            </Callout.Text>
+          </Callout.Root>
+        )}
 
         <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Donation summary">
           <Card className="border-l-4 border-l-primary p-5">
@@ -448,6 +459,7 @@ const DonorDashboard = () => {
         )}
         </div>
       </main>
+      {canDonate && (
       <AppModal
         open={showForm}
         onOpenChange={open => { if (!open && (submitting || analyzing)) return; setShowForm(open); if (!open) resetForm(); }}
@@ -569,6 +581,7 @@ const DonorDashboard = () => {
             </div>
           </form>
       </AppModal>
+      )}
     </div>
   );
 };
