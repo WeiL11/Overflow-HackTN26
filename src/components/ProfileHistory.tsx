@@ -7,6 +7,7 @@ import ListingTimeline from '@/components/ListingTimeline';
 import { donationStage, requestStage } from '@/lib/listingStage';
 import { getDonorListings, getMyFoodRequests, getRequestsForListings, type MyFoodRequest } from '@/services/food';
 import type { FoodListing, FoodRequest } from '@/types/food';
+import { errorMessage } from '@/lib/errors';
 
 const formatDateTime = (iso: string) =>
   new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -26,7 +27,7 @@ const useAsync = <T,>(load: () => Promise<T>, deps: unknown[]) => {
     setState(current => ({ ...current, loading: true }));
     load()
       .then(data => { if (!cancelled) setState({ data, error: null, loading: false }); })
-      .catch(error => { if (!cancelled) setState({ data: null, error: error instanceof Error ? error.message : 'Unable to load.', loading: false }); });
+      .catch(error => { if (!cancelled) setState({ data: null, error: errorMessage(error, 'Unable to load.'), loading: false }); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);

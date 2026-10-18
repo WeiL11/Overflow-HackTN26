@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import { MyDonations, MyFood } from '@/components/ProfileHistory';
 import { APP_NAME } from '@/config/brand';
 import { useAuth } from '@/lib/auth-context';
+import { errorMessage } from '@/lib/errors';
 
 const Profile = () => {
   const { user, profile, loading, updateProfileName } = useAuth();
@@ -37,7 +38,7 @@ const Profile = () => {
       await updateProfileName(fullName);
       toast.success('Profile updated.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to update profile.');
+      toast.error(errorMessage(error, 'Unable to update profile.'));
     } finally {
       setSaving(false);
     }

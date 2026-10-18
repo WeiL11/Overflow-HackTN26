@@ -17,6 +17,7 @@ import FoodMap, { type MapListing } from '@/components/FoodMap';
 import { Badge, Button, Card, SegmentedControl, Select, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import { Package, MapPin, Search, CheckCircle, Sparkles, Loader2, X, List, Map as MapIcon, Navigation } from 'lucide-react';
+import { errorMessage } from '@/lib/errors';
 
 const AI_EXAMPLES = [
   'Vegetarian dinner for a family of 4',
@@ -83,7 +84,7 @@ const ReceiverDashboard = () => {
       setListings(listings);
       setMyRequests(map);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to load dashboard data.');
+      toast.error(errorMessage(error, 'Unable to load dashboard data.'));
     }
   }, [receiverId]);
 
@@ -118,7 +119,7 @@ const ReceiverDashboard = () => {
       setRequestNotes('');
       fetchDashboardData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to reserve food.');
+      toast.error(errorMessage(error, 'Unable to reserve food.'));
     } finally {
       setRequesting(null);
     }
@@ -130,7 +131,7 @@ const ReceiverDashboard = () => {
       toast.success('Request cancelled.');
       fetchDashboardData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to cancel request.');
+      toast.error(errorMessage(error, 'Unable to cancel request.'));
     }
   };
 
@@ -140,7 +141,7 @@ const ReceiverDashboard = () => {
       toast.success('Pickup confirmed.');
       fetchDashboardData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to confirm pickup.');
+      toast.error(errorMessage(error, 'Unable to confirm pickup.'));
     }
   };
 
@@ -154,7 +155,7 @@ const ReceiverDashboard = () => {
       setAiResult({ ...result, query: trimmed });
       if (result.fallback) toast.info('AI is busy, so these are keyword matches.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'AI search failed.');
+      toast.error(errorMessage(error, 'AI search failed.'));
       setSearchMode('keyword');
       setSearchTerm(trimmed);
     } finally {
