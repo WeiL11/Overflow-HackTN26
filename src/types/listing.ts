@@ -7,6 +7,8 @@ export type DonorListingFilter = 'pending' | 'available' | 'done';
 export type RecipientListingFilter = 'active' | 'done' | 'all';
 export type ListingDisplayStatus = ListingStage | 'expired';
 export type CreateFoodListingInput = {
+  // Map pin for the pickup spot; null when the address couldn't be located.
+  coordinates?: { lat: number; lng: number } | null;
   donor_id: string;
   food_name: string;
   quantity: number;
