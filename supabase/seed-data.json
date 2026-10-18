@@ -76,7 +76,7 @@
       "originalQuantity": 20,
       "notes": "Individually packed and ready for same-day pickup.",
       "location": "Downtown Cafe",
-      "status": "requested",
+      "status": "available",
       "latitude": 36.1612,
       "longitude": -86.7775,
       "category": "prepared_meals",
@@ -465,6 +465,18 @@
     }
   ],
   "pickupSlots": [
+    {
+      "id": "40000000-0000-4000-8000-000000000005",
+      "listingId": "20000000-0000-4000-8000-000000000001",
+      "capacity": 12,
+      "startOffsetHours": -2
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000006",
+      "listingId": "20000000-0000-4000-8000-000000000002",
+      "capacity": 20,
+      "startOffsetHours": -1
+    },
     {
       "id": "40000000-0000-4000-8000-000000000001",
       "listingId": "20000000-0000-4000-8000-000000000001",

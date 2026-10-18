@@ -142,6 +142,20 @@ const ReceiverDashboard = () => {
     }
   };
 
+  const refreshOpenPickupSlots = useCallback(async () => {
+    if (!requestFormListingId) return;
+    const slots = await getAvailablePickupSlots(requestFormListingId);
+    setAvailableSlots(slots);
+    setSelectedPickupSlotId(current =>
+      slots.some(slot => slot.id === current && slot.remaining > 0) ? current : "",
+    );
+  }, [requestFormListingId]);
+  usePolling(
+    refreshOpenPickupSlots,
+    DASHBOARD_POLL_INTERVAL_MS,
+    Boolean(requestFormListingId),
+  );
+
   const closeRequestForm = () => {
     setRequestFormListingId(null);
     setSelectedPickupSlotId("");
@@ -223,9 +237,15 @@ const ReceiverDashboard = () => {
 
   const handleCancelRequest = async (requestId: string, note?: string) => {
     try {
-      await cancelFoodRequest(requestId, note);
+      const updatedRequest = await cancelFoodRequest(requestId, note);
+      setMyRequests(current => {
+        const next = new Map(current);
+        const existing = next.get(updatedRequest.listing_id);
+        if (existing) next.set(updatedRequest.listing_id, { ...existing, ...updatedRequest });
+        return next;
+      });
       toast.success("Request cancelled.");
-      fetchDashboardData();
+      await fetchDashboardData();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to cancel request.",

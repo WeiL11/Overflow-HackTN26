@@ -23,7 +23,7 @@ export const getAllDonorListings = async (donorId: string): Promise<FoodListing[
 
 export const getDonorListings = async (donorId: string, filter: DonorListingFilter = 'pending'): Promise<FoodListing[]> => {
   if (filter === 'pending') {
-    const ids = await getListingIdsForStatuses(['pending']);
+    const ids = await getListingIdsForStatuses(['pending', 'pending_pickup']);
     return ids.length ? getDonorListingsQuery(donorId, query => query.in('id', ids)) : [];
   }
   const completedIds = await getListingIdsForStatuses(['completed']);
@@ -142,19 +142,22 @@ export const advanceFoodRequest = async (requestId: string, direction: 'forward'
   return data;
 };
 
-export const declineFoodRequest = async (requestId: string, note?: string): Promise<void> => {
-  const { error } = await supabase.rpc('decline_food_request', { p_request_id: requestId, p_note: note });
+export const declineFoodRequest = async (requestId: string, note?: string): Promise<FoodRequest> => {
+  const { data, error } = await supabase.rpc('decline_food_request', { p_request_id: requestId, p_note: note });
   if (error) throw error;
+  return data;
 };
 
-export const undoFoodRequestDecline = async (requestId: string): Promise<void> => {
-  const { error } = await supabase.rpc('undo_food_request_decline', { p_request_id: requestId });
+export const undoFoodRequestDecline = async (requestId: string): Promise<FoodRequest> => {
+  const { data, error } = await supabase.rpc('undo_food_request_decline', { p_request_id: requestId });
   if (error) throw error;
+  return data;
 };
 
-export const cancelFoodRequest = async (requestId: string, note?: string): Promise<void> => {
-  const { error } = await supabase.rpc('cancel_food_request', { p_request_id: requestId, p_note: note });
+export const cancelFoodRequest = async (requestId: string, note?: string): Promise<FoodRequest> => {
+  const { data, error } = await supabase.rpc('cancel_food_request', { p_request_id: requestId, p_note: note });
   if (error) throw error;
+  return data;
 };
 
 export const confirmFoodPickup = async (requestId: string, note?: string): Promise<void> => {
