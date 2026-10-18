@@ -3,8 +3,9 @@ export interface LatLng {
   lng: number;
 }
 
-// Demo default when the browser won't share a location (e.g. the HTTP live site).
-export const VANDERBILT: LatLng & { label: string } = { lat: 36.1447, lng: -86.8027, label: 'Vanderbilt campus' };
+// Demo default when the browser won't share a location (e.g. the HTTP live site):
+// Featheringill Hall, Vanderbilt School of Engineering (OpenStreetMap).
+export const FEATHERINGILL: LatLng & { label: string } = { lat: 36.144892, lng: -86.803358, label: 'Featheringill Hall' };
 
 const EARTH_RADIUS_MILES = 3958.8;
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
@@ -34,26 +35,6 @@ export async function getBrowserPosition(): Promise<LatLng | null> {
   } catch {
     return null;
   }
-}
-
-// Rough location from the visitor's IP address (city-level, a few miles off), for when GPS
-// isn't available, e.g. on the HTTP live site. Tries two free services; null if both fail.
-export async function getApproximatePosition(): Promise<(LatLng & { city: string | null }) | null> {
-  const services: [string, (body: Record<string, unknown>) => (LatLng & { city: string | null }) | null][] = [
-    ['https://ipwho.is/', body => (body.success === false ? null : { lat: Number(body.latitude), lng: Number(body.longitude), city: (body.city as string) ?? null })],
-    ['https://get.geojs.io/v1/ip/geo.json', body => ({ lat: Number(body.latitude), lng: Number(body.longitude), city: (body.city as string) ?? null })],
-  ];
-  for (const [url, parse] of services) {
-    try {
-      const response = await fetch(url, { headers: { Accept: 'application/json' } });
-      if (!response.ok) continue;
-      const position = parse(await response.json());
-      if (position && Number.isFinite(position.lat) && Number.isFinite(position.lng)) return position;
-    } catch {
-      // try the next service
-    }
-  }
-  return null;
 }
 
 // Look up an address with OpenStreetMap Nominatim, preferring results around Nashville.

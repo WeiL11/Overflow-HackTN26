@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import ListingPhoto from '@/components/ListingPhoto';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
-import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
+import ListingTimeline from '@/components/ListingTimeline';
+import { requestStage } from '@/lib/listingStage';
 import AppModal, { ModalClose } from '@/components/AppModal';
 import type { FoodListing, RequestByListing } from '@/types/food';
 import { cancelFoodRequest, confirmFoodPickup, getRecipientDashboardData, reserveFood } from '@/services/food';
@@ -13,9 +14,10 @@ import { DIETARY_TAGS, categoryLabel, tagLabel } from '@/config/foodTaxonomy';
 import { distanceMiles, formatMiles, toLatLng } from '@/lib/geo';
 import { useReceiverLocation } from '@/hooks/use-receiver-location';
 import FoodMap, { type MapListing } from '@/components/FoodMap';
-import { Badge, Button, Card, SegmentedControl, Select, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
+import { Badge, Button, Card, Callout, SegmentedControl, Select, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import { Package, MapPin, Search, CheckCircle, Sparkles, Loader2, X, List, Map as MapIcon, Navigation } from 'lucide-react';
+import { errorMessage } from '@/lib/errors';
 
 const AI_EXAMPLES = [
   'Vegetarian dinner for a family of 4',
@@ -65,7 +67,7 @@ const ReceiverDashboard = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('expiry');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const receiverLocation = useReceiverLocation();
-  const youLabel = receiverLocation.source === 'default' ? 'Vanderbilt campus' : receiverLocation.source === 'gps' ? 'You are here' : 'You (approx.)';
+  const youLabel = receiverLocation.source === 'gps' ? 'You are here' : 'You (Featheringill Hall)';
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
@@ -82,7 +84,7 @@ const ReceiverDashboard = () => {
       setListings(listings);
       setMyRequests(map);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to load dashboard data.');
+      toast.error(errorMessage(error, 'Unable to load dashboard data.'));
     }
   }, [receiverId]);
 
@@ -117,7 +119,7 @@ const ReceiverDashboard = () => {
       setRequestNotes('');
       fetchDashboardData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to reserve food.');
+      toast.error(errorMessage(error, 'Unable to reserve food.'));
     } finally {
       setRequesting(null);
     }
@@ -129,7 +131,7 @@ const ReceiverDashboard = () => {
       toast.success('Request cancelled.');
       fetchDashboardData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to cancel request.');
+      toast.error(errorMessage(error, 'Unable to cancel request.'));
     }
   };
 
@@ -139,7 +141,7 @@ const ReceiverDashboard = () => {
       toast.success('Pickup confirmed.');
       fetchDashboardData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to confirm pickup.');
+      toast.error(errorMessage(error, 'Unable to confirm pickup.'));
     }
   };
 
@@ -153,7 +155,7 @@ const ReceiverDashboard = () => {
       setAiResult({ ...result, query: trimmed });
       if (result.fallback) toast.info('AI is busy, so these are keyword matches.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'AI search failed.');
+      toast.error(errorMessage(error, 'AI search failed.'));
       setSearchMode('keyword');
       setSearchTerm(trimmed);
     } finally {
@@ -205,6 +207,8 @@ const ReceiverDashboard = () => {
 
 
   const recipientName = profile?.full_name?.split(' ')[0] || 'there';
+  // Recipients and NGOs can request food; donors can browse but not request (reserve_food checks the role).
+  const canRequest = profile?.role === 'receiver' || profile?.role === 'ngo';
 
   if (authLoading) return null;
 
@@ -218,6 +222,15 @@ const ReceiverDashboard = () => {
           <h1 className="text-3xl font-heading font-bold text-foreground">Hi, {recipientName}</h1>
           <p className="mt-1 text-muted-foreground">Find fresh food available in your community.</p>
         </section>
+
+        {profile && !canRequest && (
+          <Callout.Root color="amber" className="mb-6">
+            <Callout.Text>
+              You're signed in as a donor, so you can browse but not request food.{' '}
+              <Link to="/donor" className="font-medium underline">Go to your donor dashboard</Link> to post food.
+            </Callout.Text>
+          </Callout.Root>
+        )}
 
         {showingAi && aiResult && (
           <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
@@ -273,7 +286,7 @@ const ReceiverDashboard = () => {
           </div>
         ) : viewMode === 'map' ? (
           <div className="space-y-2">
-            <FoodMap listings={mapListings} you={receiverLocation.position} youLabel={youLabel} onRequest={requestFromMap} />
+            <FoodMap listings={mapListings} you={receiverLocation.position} youLabel={youLabel} onRequest={canRequest ? requestFromMap : undefined} />
             {mapListings.length < filtered.length && (
               <p className="text-xs text-muted-foreground">
                 {filtered.length - mapListings.length} {filtered.length - mapListings.length === 1 ? 'listing has' : 'listings have'} no map location; switch to List to see {filtered.length - mapListings.length === 1 ? 'it' : 'them'}.
@@ -286,17 +299,7 @@ const ReceiverDashboard = () => {
               const request = myRequests.get(item.id);
               const requestStatus = request?.status;
               const hasRequested = !!request && requestStatus !== 'rejected' && requestStatus !== 'cancelled';
-              const timelineStage: ListingStage = requestStatus === 'completed'
-                ? 'completed'
-                : requestStatus === 'pending_pickup'
-                  ? 'pending_pickup'
-                  : requestStatus === 'pending'
-                    ? 'requested'
-                    : requestStatus === 'rejected'
-                      ? 'rejected'
-                      : requestStatus === 'cancelled'
-                        ? 'cancelled'
-                        : 'available';
+              const timelineStage = requestStage(requestStatus);
               return (
                 <Card key={item.id} id={`listing-${item.id}`} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">
@@ -364,7 +367,7 @@ const ReceiverDashboard = () => {
                             )}
                             {requestStatus === 'completed' && <Badge color="green" variant="solid">Done</Badge>}
                           </div>
-                        ) : (
+                        ) : canRequest && (
                           <Button
                             size="2"
                             disabled={requesting === item.id}

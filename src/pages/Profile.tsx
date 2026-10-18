@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge, Button, Card, Text, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
-import { UserRound } from 'lucide-react';
+import { HandHeart, ShoppingBasket, UserRound } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { MyDonations, MyFood } from '@/components/ProfileHistory';
 import { APP_NAME } from '@/config/brand';
 import { useAuth } from '@/lib/auth-context';
+import { errorMessage } from '@/lib/errors';
 
 const Profile = () => {
   const { user, profile, loading, updateProfileName } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [saving, setSaving] = useState(false);
+  // ?tab=food or ?tab=donations, so each history list has its own link.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab');
+  const showTab = (next: 'food' | 'donations') => setSearchParams(tab === next ? {} : { tab: next });
 
   useEffect(() => {
     setFullName(profile?.full_name || '');
@@ -32,7 +38,7 @@ const Profile = () => {
       await updateProfileName(fullName);
       toast.success('Profile updated.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to update profile.');
+      toast.error(errorMessage(error, 'Unable to update profile.'));
     } finally {
       setSaving(false);
     }
@@ -43,7 +49,7 @@ const Profile = () => {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       <Navbar />
-      <main className="container mx-auto min-h-0 max-w-xl flex-1 overflow-y-auto px-4 py-10">
+      <main className="container mx-auto min-h-0 max-w-2xl flex-1 overflow-y-auto px-4 py-10">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
             <UserRound className="h-6 w-6" />
@@ -72,6 +78,24 @@ const Profile = () => {
             </Button>
           </form>
         </Card>
+
+        <div className="mt-8 grid grid-cols-2 gap-3">
+          <Button size="3" variant={tab === 'food' ? 'solid' : 'soft'} onClick={() => showTab('food')}>
+            <ShoppingBasket className="h-4 w-4" /> <span className="whitespace-nowrap">My Food</span>
+          </Button>
+          <Button size="3" variant={tab === 'donations' ? 'solid' : 'soft'} onClick={() => showTab('donations')}>
+            <HandHeart className="h-4 w-4" /> <span className="whitespace-nowrap">My Donations</span>
+          </Button>
+        </div>
+        {user && (tab === 'food' || tab === 'donations') && (
+          <section className="mt-6" aria-label={tab === 'food' ? 'My Food' : 'My Donations'}>
+            <h2 className="mb-1 text-xl font-heading font-bold text-foreground">{tab === 'food' ? 'My Food' : 'My Donations'}</h2>
+            <p className="mb-4 text-sm text-muted-foreground">
+              {tab === 'food' ? 'Food you requested and where each pickup stands.' : 'Food you posted and where each listing stands.'}
+            </p>
+            {tab === 'food' ? <MyFood userId={user.id} /> : <MyDonations userId={user.id} />}
+          </section>
+        )}
       </main>
     </div>
   );

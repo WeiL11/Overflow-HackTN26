@@ -1,6 +1,6 @@
 import FoodQueryDetails from '@/components/FoodQueryDetails';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { geocodeAddress, type LatLng } from '@/lib/geo';
 import ListingPhoto from '@/components/ListingPhoto';
@@ -8,13 +8,15 @@ import type { Json } from '@/integrations/supabase/types';
 import { analyzeFoodPhoto, detectCurrentAddress, prepareFoodPhoto, toDatetimeLocal, type PhotoMetadata } from '@/lib/foodPhoto';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
-import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
+import ListingTimeline from '@/components/ListingTimeline';
+import { donationStage } from '@/lib/listingStage';
 import AppModal, { ModalClose } from '@/components/AppModal';
 import type { FoodListing, FoodRequest, ProfileSummary } from '@/types/food';
 import { advanceFoodRequest, createFoodListing, deleteFoodListing, getDonorListings, getProfilesByUserIds, getRequestsForListings, rejectFoodRequest } from '@/services/food';
-import { Badge, Button, Card, Text, TextArea, TextField, type BadgeProps } from '@radix-ui/themes';
+import { Badge, Button, Card, Callout, Text, TextArea, TextField, type BadgeProps } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import { Plus, Package, MapPin, Trash2, CheckCircle, XCircle, User, Building2, Camera, Sparkles, Loader2, Check } from 'lucide-react';
+import { errorMessage } from '@/lib/errors';
 
 // Listings are timed by pickup deadline (closing time or last pickup), not food expiry.
 const MAX_PICKUP_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -101,7 +103,7 @@ const DonorDashboard = () => {
       setAiFilled(true);
       toast.success('Photo analyzed. Review the suggested details.');
     } catch (error) {
-      setAnalysisError(error instanceof Error ? error.message : 'Photo analysis failed.');
+      setAnalysisError(errorMessage(error, 'Photo analysis failed.'));
     } finally { setAnalyzing(false); }
   };
 
@@ -118,7 +120,7 @@ const DonorDashboard = () => {
       setPhotoMetadata(prepared.metadata);
       await runAnalysis(image);
     } catch (error) {
-      setAnalysisError(error instanceof Error ? error.message : 'Could not read this photo.');
+      setAnalysisError(errorMessage(error, 'Could not read this photo.'));
     } finally {
       setAnalyzing(false);
       if (photoInputRef.current) photoInputRef.current.value = '';
@@ -132,7 +134,7 @@ const DonorDashboard = () => {
     try {
       setListings(await getDonorListings(donorId));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to load listings.');
+      toast.error(errorMessage(error, 'Unable to load listings.'));
     }
   }, [donorId]);
 
@@ -153,7 +155,7 @@ const DonorDashboard = () => {
         setReceiverProfiles(map);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to load requests.');
+      toast.error(errorMessage(error, 'Unable to load requests.'));
     }
   }, [donorId]);
 
@@ -207,7 +209,7 @@ const DonorDashboard = () => {
       setShowForm(false);
       fetchListings();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to create listing.');
+      toast.error(errorMessage(error, 'Unable to create listing.'));
     } finally {
       setSubmitting(false);
     }
@@ -220,7 +222,7 @@ const DonorDashboard = () => {
       fetchListings();
       fetchRequests();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to remove listing.');
+      toast.error(errorMessage(error, 'Unable to remove listing.'));
     }
   };
 
@@ -231,7 +233,7 @@ const DonorDashboard = () => {
       fetchListings();
       fetchRequests();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to update request.');
+      toast.error(errorMessage(error, 'Unable to update request.'));
     }
   };
 
@@ -242,7 +244,7 @@ const DonorDashboard = () => {
       fetchListings();
       fetchRequests();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to reject request.');
+      toast.error(errorMessage(error, 'Unable to reject request.'));
     }
   };
 
@@ -291,6 +293,8 @@ const DonorDashboard = () => {
   };
 
   const donorName = profile?.full_name?.split(' ')[0] || 'there';
+  // Only donor accounts can post food (the photo bucket's upload policy checks the role too).
+  const canDonate = profile?.role === 'donor';
   const availableListings = listings.filter(item => item.status === 'available').length;
   const pendingRequestCount = requests.filter(request => request.status === 'pending').length;
 
@@ -310,6 +314,15 @@ const DonorDashboard = () => {
             <p className="mt-1 text-primary-foreground/85">Manage donations and respond to community requests.</p>
           </div>
         </section>
+
+        {profile && !canDonate && (
+          <Callout.Root color="amber" className="mb-6">
+            <Callout.Text>
+              Posting food needs a donor account. You're signed in as a {profile.role === 'ngo' ? 'NGO' : 'recipient'}:{' '}
+              <Link to="/receiver" className="font-medium underline">find food instead</Link>, or sign up for a donor account to donate.
+            </Callout.Text>
+          </Callout.Root>
+        )}
 
         <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Donation summary">
           <Card className="border-l-4 border-l-primary p-5">
@@ -336,13 +349,7 @@ const DonorDashboard = () => {
             {listings.map(item => {
               const itemRequests = getRequestsForListing(item.id);
               const pendingRequests = itemRequests.filter(r => r.status === 'pending');
-              const timelineStage: ListingStage = itemRequests.some(request => request.status === 'completed')
-                ? 'completed'
-                : itemRequests.some(request => request.status === 'pending_pickup')
-                  ? 'pending_pickup'
-                  : pendingRequests.length > 0 || item.status === 'requested'
-                    ? 'requested'
-                    : 'available';
+              const timelineStage = donationStage(item.status, itemRequests.map(request => request.status));
               return (
                 <Card key={item.id} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">
@@ -456,6 +463,7 @@ const DonorDashboard = () => {
         )}
         </div>
       </main>
+      {canDonate && (
       <AppModal
         open={showForm}
         onOpenChange={open => { if (!open && (submitting || analyzing)) return; setShowForm(open); if (!open) resetForm(); }}
@@ -578,6 +586,7 @@ const DonorDashboard = () => {
             </div>
           </form>
       </AppModal>
+      )}
     </div>
   );
 };

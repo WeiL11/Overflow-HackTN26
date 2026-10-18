@@ -22,22 +22,27 @@ interface FoodMapProps {
   listings: MapListing[];
   you: LatLng;
   youLabel: string;
-  onRequest: (listingId: string) => void;
+  // Omitted when the viewer can't request food (e.g. a donor browsing).
+  onRequest?: (listingId: string) => void;
 }
 
-// Zoom to show every pin plus the receiver whenever the set of pins changes.
+const NEARBY_MILES = 1.5;
+
+// Zoom to show the given pins plus the receiver whenever that set changes.
 function FitToMarkers({ points }: { points: LatLng[] }) {
   const map = useMap();
   const key = points.map(p => `${p.lat},${p.lng}`).join('|');
   useEffect(() => {
     if (points.length === 1) map.setView(points[0], 14);
-    else if (points.length > 1) map.fitBounds(latLngBounds(points.map(p => [p.lat, p.lng])), { padding: [32, 32], maxZoom: 15 });
+    else if (points.length > 1) map.fitBounds(latLngBounds(points.map(p => [p.lat, p.lng])), { padding: [32, 32], maxZoom: 16 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, key]);
   return null;
 }
 
 export default function FoodMap({ listings, you, youLabel, onRequest }: FoodMapProps) {
+  // Open zoomed in on the neighborhood (pins within walking/biking range); zoom out for the rest.
+  const nearby = listings.filter(listing => listing.distance <= NEARBY_MILES);
   // Several listings can share a pickup spot; group them so each spot is one pin.
   const spots = new Map<string, MapListing[]>();
   for (const listing of listings) {
@@ -52,7 +57,7 @@ export default function FoodMap({ listings, you, youLabel, onRequest }: FoodMapP
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitToMarkers points={[you, ...listings.map(l => l.position)]} />
+        <FitToMarkers points={[you, ...(nearby.length > 0 ? nearby : listings).map(l => l.position)]} />
 
         {[...spots.values()].map(group => (
           <CircleMarker
@@ -73,7 +78,7 @@ export default function FoodMap({ listings, you, youLabel, onRequest }: FoodMapP
                         <p className="text-xs text-gray-500">{categoryLabel(listing.category)} · {listing.quantity} items</p>
                         <ExpiryCountdown expiryTime={listing.expiry_time} />
                       </div>
-                      <Button size="1" onClick={() => onRequest(listing.id)}>Request</Button>
+                      {onRequest && <Button size="1" onClick={() => onRequest(listing.id)}>Request</Button>}
                     </li>
                   ))}
                 </ul>
