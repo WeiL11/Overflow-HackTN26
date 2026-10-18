@@ -25,6 +25,7 @@ const getLocalCredentials = () => {
       cwd: rootDir,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
+      timeout: 15000,
     });
     const values = parseStatusEnv(output);
     const required = ["API_URL", "ANON_KEY", "SERVICE_ROLE_KEY"];
@@ -64,7 +65,7 @@ const seed = async () => {
   const admin = createClient(credentials.apiUrl, credentials.serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const password = process.env.SEED_PASSWORD || "overlfowDev123!";
+  const password = process.env.SEED_PASSWORD || "overflowDev123!";
   const authUsers = [];
   for (let page = 1; ; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
@@ -77,6 +78,10 @@ const seed = async () => {
   for (const user of seedData.users) {
     const userId = userIds.get(user.id);
     const existing = authUsers.some(candidate => candidate.id === userId);
+    const existingByEmail = authUsers.find((candidate) => candidate.email === user.email);
+    if (existingByEmail && existingByEmail.id !== userId) {
+      throw new Error(`Auth email is already assigned to another user: ${user.email}`);
+    }
     const attributes = {
       id: userId,
       email: user.email,
@@ -105,6 +110,7 @@ const seed = async () => {
     food_name: listing.foodName,
     quantity: listing.quantity,
     location: listing.location,
+    notes: listing.notes || null,
     expiry_time: new Date(expiryBase + listing.expiryOffsetHours * 60 * 60 * 1000).toISOString(),
     status: listing.status,
   }));

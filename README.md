@@ -1,4 +1,4 @@
-# Overlfow-Hack
+# Overflow-Hack
 
 Food donation and redistribution app built with React, TypeScript, Vite, and Supabase.
 
@@ -15,7 +15,7 @@ Clone the repository and enter the project directory:
 
 ```bash
 git clone <repository-url>
-cd share-a-meal-web
+cd Overflow-HackTN26
 ```
 
 Install dependencies, start local Supabase, seed the database, and generate the local environment and account files:
@@ -37,12 +37,26 @@ Development account credentials are stored in `dev.md`. Seed data is sourced fro
 ## Development flow
 
 ```bash
-make setup          # First-time installation and database setup
-make dev            # Start the backend, seed data, and run the frontend
-make check          # Run lint, tests, and the production build
+make install        # Install npm dependencies
+make setup          # Install dependencies, start Supabase, apply migrations, and seed data
+make frontend       # Run only the Vite frontend
+make open           # Open the local UI in the default browser
+make backend        # Start local Supabase
+make backend-status # Show local Supabase service status
+make seed           # Seed local users, listings, and requests
+make dev-accounts   # Regenerate dev.md account documentation
+make db-reset       # Reset and reseed the local database
+make migrate        # Apply pending local database migrations
+make typecheck      # Run the TypeScript compiler
+make test           # Run the test suite
+make build          # Build the production frontend
+make check          # Run typecheck, lint, tests, and the production build
+make dev            # Start Supabase, migrate, seed, and run configured services
 make backend-stop   # Stop local Supabase
 make ai-server      # Start the photo autofill API (see server/README.md)
 ```
+
+`make dev` intentionally stays in the foreground while Vite runs. Stop it with Ctrl-C; this is expected and is not a seed-script hang.
 
 Run `make help` to list every available command:
 
@@ -55,6 +69,28 @@ Use `make seed` to reseed the local database or `make db-reset` to reset and res
 ## Environment
 
 `make seed` generates `.env.local` for local Supabase. Use `example.env` as the variable template when configuring another environment.
+
+## Production deployment
+
+Configure the self-hosted Supabase Auth Site URL and redirect allow-list to the public frontend origin before release. Apply migrations to production before releasing the frontend; back up first and do not use a destructive reset command:
+
+```bash
+npx supabase db push --db-url "$SUPABASE_DB_URL"
+```
+
+Copy `.env.production.example` securely and never commit production values. Build and run the static frontend image with:
+
+```bash
+make production-build \
+  VITE_SUPABASE_URL="https://supabase.example.com" \
+  VITE_SUPABASE_PUBLISHABLE_KEY="your-publishable-key"
+make production-run
+```
+
+Override the image and host port when needed, for example `make production-run IMAGE=overflow-web PORT=8080`. When building behind a TLS-inspecting proxy, use a direct `docker build` command to pass the BuildKit CA secret flag `--secret id=build-ca,src=/path/to/company-ca.crt`; the Make target does not support BuildKit secrets.
+
+
+The health endpoint is `/healthz`. `VITE_*` values are public and baked into the frontend, so use only the publishable/anon key and never a service role key. TLS must terminate at a reverse proxy or load balancer, and browsers must be able to reach the self-hosted Supabase HTTPS URL.
 
 ## Branding
 

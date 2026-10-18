@@ -1,59 +1,34 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/auth';
-import { analyzeFoodPhoto, detectCurrentAddress, resizeImage, toDatetimeLocal } from '@/lib/foodPhoto';
+import { useAuth } from '@/lib/auth-context';
 import ListingPhoto from '@/components/ListingPhoto';
 import type { Json } from '@/integrations/supabase/types';
+import { analyzeFoodPhoto, detectCurrentAddress, resizeImage, toDatetimeLocal } from '@/lib/foodPhoto';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
 import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
-import { Badge, Button, Card, Dialog, Text, TextField, type BadgeProps } from '@radix-ui/themes';
+import AppModal, { ModalClose } from '@/components/AppModal';
+import type { FoodListing, FoodRequest, ProfileSummary } from '@/types/food';
+import { advanceFoodRequest, createFoodListing, deleteFoodListing, getDonorListings, getProfilesByUserIds, getRequestsForListings, rejectFoodRequest } from '@/services/food';
+import { Badge, Button, Card, Text, TextArea, TextField, type BadgeProps } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import { Plus, Package, MapPin, Trash2, CheckCircle, XCircle, User, Building2, Camera, Sparkles, Loader2, Check } from 'lucide-react';
 
-interface FoodListing {
-  photo_path: string | null;
-  food_analysis: Json | null;
-  id: string;
-  food_name: string;
-  quantity: number;
-  location: string;
-  expiry_time: string;
-  status: string;
-  created_at: string;
-}
-
-interface FoodRequest {
-  id: string;
-  listing_id: string;
-  receiver_id: string;
-  status: string;
-  quantity: number;
-  notes: string | null;
-  created_at: string;
-}
-
-interface ReceiverProfile {
-  user_id: string;
-  full_name: string;
-  role: string;
-}
-
-export default function DonorDashboard() {
+const DonorDashboard = () => {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [listings, setListings] = useState<FoodListing[]>([]);
   const [requests, setRequests] = useState<FoodRequest[]>([]);
-  const [receiverProfiles, setReceiverProfiles] = useState<Map<string, ReceiverProfile>>(new Map());
+  const [receiverProfiles, setReceiverProfiles] = useState<Map<string, ProfileSummary>>(new Map());
   const [showForm, setShowForm] = useState(false);
   const [foodName, setFoodName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [location, setLocation] = useState('');
   const [expiryTime, setExpiryTime] = useState('');
+  const [listingNotes, setListingNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
-  const [analysis, setAnalysis] = useState<import('@/integrations/supabase/types').Json | null>(null);
+  const [analysis, setAnalysis] = useState<Json | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
@@ -71,6 +46,7 @@ export default function DonorDashboard() {
     setQuantity('');
     setLocation('');
     setExpiryTime('');
+    setListingNotes('');
     setPhotoPreview(null);
     setPhoto(null);
     setAnalysis(null);
@@ -79,7 +55,8 @@ export default function DonorDashboard() {
     setLocationSource(null);
   };
 
-  // Pre-fill the pickup location when the form opens; the donor must confirm it.
+  const previousLocation = listings[0]?.location;
+
   useEffect(() => {
     if (!showForm || location) return;
     let cancelled = false;
@@ -89,13 +66,13 @@ export default function DonorDashboard() {
       if (address) {
         setLocation(current => current || address);
         setLocationSource('gps');
-      } else if (listings[0]?.location) {
-        setLocation(current => current || listings[0].location);
+      } else if (previousLocation) {
+        setLocation(current => current || previousLocation);
         setLocationSource('previous');
       }
     })();
     return () => { cancelled = true; };
-  }, [showForm]);
+  }, [showForm, location, previousLocation]);
 
   const runAnalysis = async (image: string) => {
     setAnalyzing(true);
@@ -137,55 +114,44 @@ export default function DonorDashboard() {
     }
   };
 
-  const fetchListings = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('food_listings')
-      .select('*')
-      .eq('donor_id', user.id)
-      .order('created_at', { ascending: false });
-    setListings(data || []);
-  };
+  const donorId = user?.id;
 
-  const fetchRequests = async () => {
-    if (!user) return;
-    // Get all listings by this donor, then get requests for those listings
-    const { data: myListings } = await supabase
-      .from('food_listings')
-      .select('id')
-      .eq('donor_id', user.id);
-    if (!myListings || myListings.length === 0) {
-      setRequests([]);
-      return;
+  const fetchListings = useCallback(async () => {
+    if (!donorId) return;
+    try {
+      setListings(await getDonorListings(donorId));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to load listings.');
     }
-    const listingIds = myListings.map(l => l.id);
-    const { data } = await supabase
-      .from('food_requests')
-      .select('*')
-      .in('listing_id', listingIds)
-      .order('created_at', { ascending: false });
-    const reqs = data || [];
-    setRequests(reqs);
+  }, [donorId]);
 
-    // Fetch receiver profiles to identify NGOs
-    const receiverIds = [...new Set(reqs.map(r => r.receiver_id))];
-    if (receiverIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, role')
-        .in('user_id', receiverIds);
-      const map = new Map<string, ReceiverProfile>();
-      (profiles || []).forEach((p: ReceiverProfile) => map.set(p.user_id, p));
-      setReceiverProfiles(map);
+  const fetchRequests = useCallback(async () => {
+    if (!donorId) return;
+    try {
+      // Get all listings by this donor, then get requests for those listings
+      const myListings = await getDonorListings(donorId);
+      const reqs = await getRequestsForListings(myListings.map(listing => listing.id));
+      setRequests(reqs);
+
+      // Fetch receiver profiles to identify NGOs
+      const receiverIds = [...new Set(reqs.map(r => r.receiver_id))];
+      if (receiverIds.length > 0) {
+        const profiles = await getProfilesByUserIds(receiverIds);
+        const map = new Map<string, ProfileSummary>();
+        profiles.forEach(profile => map.set(profile.user_id, profile));
+        setReceiverProfiles(map);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to load requests.');
     }
-  };
+  }, [donorId]);
 
   useEffect(() => {
     if (user) {
       fetchListings();
       fetchRequests();
     }
-  }, [user]);
+  }, [fetchListings, fetchRequests, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,68 +171,62 @@ export default function DonorDashboard() {
       return;
     }
     setSubmitting(true);
-    let photoPath: string | null = null;
     try {
-      if (photo) {
-        const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[photo.type];
-        photoPath = `${user.id}/${crypto.randomUUID()}.${extension}`;
-        const { error } = await supabase.storage.from('food-photos').upload(photoPath, photo);
-        if (error) throw error;
-      }
-      const { error } = await supabase.from('food_listings').insert({
-        donor_id: user.id, food_name: foodName, quantity: parsedQuantity, location,
+      await createFoodListing({
+        donor_id: user.id,
+        food_name: foodName,
+        quantity: parsedQuantity,
+        location,
         expiry_time: new Date(expiryTime).toISOString(),
-        photo_path: photoPath,
+        notes: listingNotes.trim() || null,
         food_analysis: analysis,
-      });
-      if (error) throw error;
+      }, photo || undefined);
       toast.success('Food listing added!');
       resetForm();
       setShowForm(false);
       fetchListings();
     } catch (error) {
-      if (photoPath) await supabase.storage.from('food-photos').remove([photoPath]);
-      toast.error(error && typeof error === 'object' && 'message' in error ? String(error.message) : 'Could not save listing. Please retry.');
-    } finally { setSubmitting(false); }
+      toast.error(error instanceof Error ? error.message : 'Unable to create listing.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('food_listings').delete().eq('id', id);
-    if (error) toast.error(error.message);
-    else {
+    try {
+      await deleteFoodListing(id);
       toast.success('Listing removed');
       fetchListings();
       fetchRequests();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to remove listing.');
     }
   };
 
-  const handleAcceptRequest = async (requestId: string) => {
-    const { error } = await supabase.rpc('respond_to_food_request', {
-      p_request_id: requestId,
-      p_status: 'accepted',
-    });
-    if (error) {
-      toast.error(error.message);
-      return;
+  const handleAdvanceRequest = async (requestId: string, direction: 'forward' | 'back') => {
+    try {
+      await advanceFoodRequest(requestId, direction);
+      toast.success(direction === 'forward' ? 'Request advanced.' : 'Request moved back.');
+      fetchListings();
+      fetchRequests();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to update request.');
     }
-
-    toast.success('Request accepted!');
-    fetchListings();
-    fetchRequests();
   };
 
   const handleRejectRequest = async (requestId: string) => {
-    const { error } = await supabase.rpc('respond_to_food_request', {
-      p_request_id: requestId,
-      p_status: 'rejected',
-    });
-    if (error) toast.error(error.message);
-    else {
+    try {
+      await rejectFoodRequest(requestId);
       toast.success('Request rejected');
       fetchListings();
       fetchRequests();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to reject request.');
     }
   };
+
+  const handleAcceptRequest = (requestId: string) => handleAdvanceRequest(requestId, 'forward');
+  const handleBackRequest = (requestId: string) => handleAdvanceRequest(requestId, 'back');
 
   const getRequestsForListing = (listingId: string) => {
     const reqs = requests.filter(r => r.listing_id === listingId);
@@ -283,6 +243,28 @@ export default function DonorDashboard() {
       case 'available': return { color: 'green', variant: 'solid' };
       case 'requested': return { color: 'gray', variant: 'soft' };
       case 'completed': return { color: 'gray', variant: 'outline' };
+      default: return { color: 'gray', variant: 'soft' };
+    }
+  };
+
+  const requestStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Requested';
+      case 'pending_pickup': return 'Pending Pickup';
+      case 'completed': return 'Done';
+      case 'rejected': return 'Rejected';
+      case 'cancelled': return 'Cancelled';
+      default: return status;
+    }
+  };
+
+  const requestStatusColor = (status: string): Pick<BadgeProps, 'color' | 'variant'> => {
+    switch (status) {
+      case 'pending': return { color: 'amber', variant: 'soft' };
+      case 'pending_pickup': return { color: 'blue', variant: 'soft' };
+      case 'completed': return { color: 'green', variant: 'solid' };
+      case 'rejected': return { color: 'red', variant: 'solid' };
+      case 'cancelled': return { color: 'gray', variant: 'soft' };
       default: return { color: 'gray', variant: 'soft' };
     }
   };
@@ -333,11 +315,13 @@ export default function DonorDashboard() {
             {listings.map(item => {
               const itemRequests = getRequestsForListing(item.id);
               const pendingRequests = itemRequests.filter(r => r.status === 'pending');
-              const timelineStage: ListingStage = item.status === 'completed'
+              const timelineStage: ListingStage = itemRequests.some(request => request.status === 'completed')
                 ? 'completed'
-                : pendingRequests.length > 0 || item.status === 'requested'
-                  ? 'requested'
-                  : 'available';
+                : itemRequests.some(request => request.status === 'pending_pickup')
+                  ? 'pending_pickup'
+                  : pendingRequests.length > 0 || item.status === 'requested'
+                    ? 'requested'
+                    : 'available';
               return (
                 <Card key={item.id} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">
@@ -355,6 +339,7 @@ export default function DonorDashboard() {
                           <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{item.location}</span>
                           <ExpiryCountdown expiryTime={item.expiry_time} />
                         </div>
+                        {item.notes && <p className="mt-3 text-sm text-muted-foreground">{item.notes}</p>}
                       </div>
                       <Button variant="ghost" size="1" onClick={() => handleDelete(item.id)} className="shrink-0">
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -389,12 +374,8 @@ export default function DonorDashboard() {
                                     NGO Priority
                                   </Badge>
                                 )}
-                                <Badge
-                                  color={req.status === 'accepted' ? 'green' : req.status === 'rejected' ? 'red' : 'gray'}
-                                  variant={req.status === 'accepted' || req.status === 'rejected' ? 'solid' : 'soft'}
-                                  className="text-xs"
-                                >
-                                  {req.status}
+                                <Badge {...requestStatusColor(req.status)} className="text-xs">
+                                  {requestStatusLabel(req.status)}
                                 </Badge>
                               </div>
                               {req.status === 'pending' && (
@@ -417,6 +398,29 @@ export default function DonorDashboard() {
                                   </Button>
                                 </div>
                               )}
+                              {req.status === 'pending_pickup' && (
+                                <div className="flex flex-wrap items-center justify-end gap-2">
+                                  <span className="text-xs text-muted-foreground">
+                                    {req.pickup_confirmed_at ? 'Pickup confirmed' : 'Awaiting pickup confirmation'}
+                                  </span>
+                                  <Button size="2" variant="ghost" className="h-7 px-2" onClick={() => handleBackRequest(req.id)}>
+                                    Back
+                                  </Button>
+                                  <Button size="2" variant="ghost" className="h-7 px-2 text-primary hover:text-primary" disabled={!req.pickup_confirmed_at} onClick={() => handleAdvanceRequest(req.id, 'forward')}>
+                                    Mark Done
+                                  </Button>
+                                  {!req.pickup_confirmed_at && (
+                                    <Button size="2" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive" onClick={() => handleRejectRequest(req.id)}>
+                                      <XCircle className="h-4 w-4 mr-1" /> Reject
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                              {req.status === 'completed' && (
+                                <Button size="2" variant="ghost" className="h-7 px-2" onClick={() => handleBackRequest(req.id)}>
+                                  Back
+                                </Button>
+                              )}
                             </div>
                               );
                             })}
@@ -432,21 +436,18 @@ export default function DonorDashboard() {
         )}
         </div>
       </main>
-      <Dialog.Root open={showForm} onOpenChange={open => { if (submitting || analyzing) return; setShowForm(open); if (!open) resetForm(); }}>
-        <Dialog.Trigger>
-          <Button
-            size="3"
-            disabled={submitting || analyzing}
-            className="fixed bottom-6 right-6 z-[100] rounded-full px-5 shadow-xl"
-          >
+      <AppModal
+        open={showForm}
+        onOpenChange={open => { if (!open && (submitting || analyzing)) return; setShowForm(open); if (!open) resetForm(); }}
+        maxWidth="640px"
+        title="New Food Listing"
+        description="Share available food with recipients in your community."
+        trigger={(
+          <Button size="3" className="fixed bottom-6 right-6 z-[100] rounded-full px-5 shadow-xl">
             <Plus className="h-5 w-5" /> Add Food
           </Button>
-        </Dialog.Trigger>
-        <Dialog.Content maxWidth="640px">
-          <Dialog.Title className="font-heading">New Food Listing</Dialog.Title>
-          <Dialog.Description size="2" mb="4">
-            Share available food with recipients in your community.
-          </Dialog.Description>
+        )}
+      >
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
               ref={photoInputRef}
@@ -456,7 +457,7 @@ export default function DonorDashboard() {
               disabled={submitting || analyzing}
               capture="environment"
               className="hidden"
-              onChange={e => handlePhoto(e.target.files?.[0])}
+              onChange={event => handlePhoto(event.target.files?.[0])}
             />
             <button
               type="button"
@@ -508,7 +509,7 @@ export default function DonorDashboard() {
                   ref={locationInputRef}
                   id="location"
                   value={location}
-                  onChange={e => { setLocation(e.target.value); setLocationSource(null); }}
+                  onChange={event => { setLocation(event.target.value); setLocationSource(null); }}
                   required
                   placeholder="e.g. 123 Main St, Downtown"
                   color={locationSource ? 'amber' : undefined}
@@ -535,15 +536,28 @@ export default function DonorDashboard() {
                 <Sparkles className="h-3.5 w-3.5" /> Suggested by AI from your photo. Please double-check before posting.
               </Text>
             )}
+            <div className="space-y-2">
+              <Text as="label" size="2" weight="medium" htmlFor="listingNotes">Notes (optional)</Text>
+              <TextArea
+                id="listingNotes"
+                className="resize-y"
+                maxLength={1000}
+                placeholder="Add pickup details, allergens, storage instructions, or other helpful information..."
+                value={listingNotes}
+                onChange={event => setListingNotes(event.target.value)}
+                disabled={submitting}
+              />
+            </div>
             <div className="flex justify-end gap-3 pt-2">
-              <Dialog.Close>
-                <Button type="button" variant="outline" disabled={submitting || analyzing}>Cancel</Button>
-              </Dialog.Close>
-              <Button type="submit" disabled={submitting || analyzing}>{submitting ? 'Adding...' : 'Add Listing'}</Button>
+              <ModalClose>
+                <Button type="button" variant="outline" disabled={submitting}>Cancel</Button>
+              </ModalClose>
+              <Button type="submit" disabled={submitting}>{submitting ? 'Adding...' : 'Add Listing'}</Button>
             </div>
           </form>
-        </Dialog.Content>
-      </Dialog.Root>
+      </AppModal>
     </div>
   );
-}
+};
+
+export default DonorDashboard;

@@ -1,10 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@radix-ui/themes';
-import { useAuth } from '@/lib/auth';
-import { Leaf, LogOut, UserRound } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { Utensils, LogOut, UserRound } from 'lucide-react';
 import { APP_NAME } from '@/config/brand';
 
-export default function Navbar() {
+const Navbar = () => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -17,7 +17,7 @@ export default function Navbar() {
     <nav className="z-50 shrink-0 border-b border-primary-foreground/20 bg-primary/95 text-primary-foreground backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 text-xl font-bold font-heading text-primary-foreground">
-          <Leaf className="h-6 w-6" />
+          <Utensils className="h-6 w-6" />
           {APP_NAME}
         </Link>
         <div className="flex items-center gap-3">
@@ -50,4 +50,6 @@ export default function Navbar() {
       </div>
     </nav>
   );
-}
+};
+
+export default Navbar;

@@ -5,7 +5,7 @@ interface ExpiryCountdownProps {
   expiryTime: string;
 }
 
-function getTimeRemaining(expiry: string) {
+const getTimeRemaining = (expiry: string) => {
   const diff = new Date(expiry).getTime() - Date.now();
   if (diff <= 0) return { expired: true, text: 'Expired', hours: 0, minutes: 0 };
 
@@ -22,7 +22,7 @@ function getTimeRemaining(expiry: string) {
   return { expired: false, text, hours: days * 24 + hours, minutes: totalMinutes };
 }
 
-export default function ExpiryCountdown({ expiryTime }: ExpiryCountdownProps) {
+const ExpiryCountdown = ({ expiryTime }: ExpiryCountdownProps) => {
   const [remaining, setRemaining] = useState(() => getTimeRemaining(expiryTime));
 
   useEffect(() => {
@@ -48,4 +48,6 @@ export default function ExpiryCountdown({ expiryTime }: ExpiryCountdownProps) {
       {remaining.text}
     </span>
   );
-}
+};
+
+export default ExpiryCountdown;

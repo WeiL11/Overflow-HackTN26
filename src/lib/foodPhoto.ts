@@ -12,7 +12,7 @@ export interface FoodPhotoSuggestion {
 const MAX_SIDE = 1024;
 
 // Shrink the photo in the browser so uploads stay small and fast.
-export async function resizeImage(file: File): Promise<string> {
+export const resizeImage = async (file: File): Promise<string> => {
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size === 0 || file.size > 5 * 1024 * 1024) {
     throw new Error('Choose a JPEG, PNG, or WebP photo up to 5 MB.');
   }
@@ -24,9 +24,9 @@ export async function resizeImage(file: File): Promise<string> {
   canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
   return canvas.toDataURL('image/jpeg', 0.85);
-}
+};
 
-export async function analyzeFoodPhoto(image: string): Promise<FoodPhotoSuggestion> {
+export const analyzeFoodPhoto = async (image: string): Promise<FoodPhotoSuggestion> => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Sign in to analyze a photo.');
@@ -67,13 +67,13 @@ export async function analyzeFoodPhoto(image: string): Promise<FoodPhotoSuggesti
       model: 'supabase-vision',
     };
   }
-}
+};
 
 // Format a Date for <input type="datetime-local"> in the user's local time zone.
-export function toDatetimeLocal(date: Date): string {
+export const toDatetimeLocal = (date: Date): string => {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
-}
+};
 
 const getPosition = () =>
   new Promise<GeolocationPosition>((resolve, reject) =>
@@ -82,7 +82,7 @@ const getPosition = () =>
 
 // Turn the browser's current position into a street address (OpenStreetMap Nominatim).
 // Geolocation only works on HTTPS or localhost; returns null when unavailable or denied.
-export async function detectCurrentAddress(): Promise<string | null> {
+export const detectCurrentAddress = async (): Promise<string | null> => {
   if (!window.isSecureContext || !('geolocation' in navigator)) return null;
   try {
     const { coords } = await getPosition();
@@ -97,4 +97,4 @@ export async function detectCurrentAddress(): Promise<string | null> {
   } catch {
     return null;
   }
-}
+};

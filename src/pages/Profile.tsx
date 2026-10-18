@@ -5,9 +5,9 @@ import { toast } from 'react-toastify';
 import { UserRound } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { APP_NAME } from '@/config/brand';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth-context';
 
-export default function Profile() {
+const Profile = () => {
   const { user, profile, loading, updateProfileName } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
@@ -75,4 +75,6 @@ export default function Profile() {
       </main>
     </div>
   );
-}
+};
+
+export default Profile;
