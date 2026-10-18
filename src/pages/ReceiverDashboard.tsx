@@ -22,12 +22,16 @@ import {
   getRecipientDashboardData,
   reserveFood,
 } from "@/services/food";
-import { Badge, IconButton, SegmentedControl } from "@radix-ui/themes";
+import { Badge, Button, IconButton, SegmentedControl, Tabs } from "@radix-ui/themes";
+import AskAIFoodSearch, { type AppliedAIResult } from "@/components/receiver/AskAIFoodSearch";
 import { toast } from "react-toastify";
 import { formatCount } from "@/lib/plural";
 import { usePolling } from "@/hooks/usePolling";
 import { DASHBOARD_POLL_INTERVAL_MS } from "@/config/timing";
-import { Package, Search } from "lucide-react";
+import { List, Map as MapIcon, Navigation, Package, Search, Sparkles, X } from "lucide-react";
+import FoodMap, { type MapListing } from "@/components/FoodMap";
+import { useReceiverLocation } from "@/hooks/use-receiver-location";
+import { distanceMiles, toLatLng } from "@/lib/geo";
 
 const ReceiverDashboard = () => {
   const { user, profile, loading: authLoading } = useAuth();
@@ -55,6 +59,10 @@ const ReceiverDashboard = () => {
   >([]);
   const [requestedQuantity, setRequestedQuantity] = useState("1");
   const [requestNotes, setRequestNotes] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [searchMode, setSearchMode] = useState<"ai" | "keyword">("ai");
+  const [aiResult, setAiResult] = useState<AppliedAIResult | null>(null);
+  const receiverLocation = useReceiverLocation();
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -274,7 +282,7 @@ const ReceiverDashboard = () => {
   };
 
   const normalizedSearch = appliedSearch.trim().toLowerCase();
-  const filtered = listings.filter((listing) => {
+  const keywordMatches = listings.filter((listing) => {
     const requestStatus = myRequests.get(listing.id)?.status;
     const matchesStatus =
       statusFilter === "all" ||
@@ -288,6 +296,33 @@ const ReceiverDashboard = () => {
       listing.location.toLowerCase().includes(normalizedSearch);
     return matchesStatus && matchesSearch;
   });
+
+  // While AI results are applied, show the AI's picks in its ranked order.
+  const listingsById = new Map(listings.map((listing) => [listing.id, listing]));
+  const aiPicks = (result: { results: { id: string }[] }) =>
+    result.results.flatMap((pick) => {
+      const listing = listingsById.get(pick.id);
+      return listing ? [listing] : [];
+    });
+  const aiReasons = new Map((aiResult?.results ?? []).map((pick) => [pick.id, pick.reason]));
+  const filtered = aiResult ? aiPicks(aiResult) : keywordMatches;
+
+  // Map pins for the listings the current filter and search show (those with coordinates).
+  const mapListings: MapListing[] = filtered.flatMap((listing) => {
+    const position = toLatLng(listing.latitude, listing.longitude);
+    return position
+      ? [{ ...listing, position, distance: distanceMiles(receiverLocation.position, position) }]
+      : [];
+  });
+  // Only listings the receiver hasn't already requested get a Request button in the popup.
+  const requestFromMap = (listingId: string) => {
+    const status = myRequests.get(listingId)?.status;
+    if (status && status !== "declined" && status !== "cancelled") {
+      toast.info("You already requested this food.");
+      return;
+    }
+    openRequestForm(listingId);
+  };
 
   const confirmationListing = listings.find(
     (listing) => listing.id === confirmationListingId,
@@ -321,7 +356,18 @@ const ReceiverDashboard = () => {
             </p>
           </section>
 
-          <div className="mb-4 flex justify-end">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <SegmentedControl.Root
+              value={viewMode}
+              onValueChange={(value) => setViewMode(value as "list" | "map")}
+            >
+              <SegmentedControl.Item value="list">
+                <span className="flex items-center gap-1"><List className="h-3.5 w-3.5" /> List</span>
+              </SegmentedControl.Item>
+              <SegmentedControl.Item value="map">
+                <span className="flex items-center gap-1"><MapIcon className="h-3.5 w-3.5" /> Map</span>
+              </SegmentedControl.Item>
+            </SegmentedControl.Root>
             <SegmentedControl.Root
               value={statusFilter}
               onValueChange={(value) =>
@@ -346,6 +392,20 @@ const ReceiverDashboard = () => {
               onClear={clearSearch}
             />
           </div>
+          {aiResult && (
+            <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <div className="space-y-1">
+                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  {aiResult.fallback ? "Keyword matches" : "AI matches"} for “{aiResult.query}”
+                </p>
+                {aiResult.summary && <p className="text-sm text-muted-foreground">{aiResult.summary}</p>}
+              </div>
+              <Button type="button" variant="ghost" size="1" onClick={() => setAiResult(null)}>
+                <X className="h-3.5 w-3.5" /> Clear
+              </Button>
+            </div>
+          )}
           {filtered.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-4 opacity-40" />
@@ -354,6 +414,23 @@ const ReceiverDashboard = () => {
                   ? "No food matches your search."
                   : "No food available right now. Check back soon!"}
               </p>
+            </div>
+          ) : viewMode === "map" ? (
+            <div className="space-y-2">
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Navigation className="h-3 w-3" /> Distances from {receiverLocation.label}
+              </p>
+              <FoodMap
+                listings={mapListings}
+                you={receiverLocation.position}
+                youLabel={receiverLocation.source === "gps" ? "You are here" : "You (Featheringill Hall)"}
+                onRequest={profile?.role === "receiver" ? requestFromMap : undefined}
+              />
+              {mapListings.length < filtered.length && (
+                <p className="text-xs text-muted-foreground">
+                  {formatCount(filtered.length - mapListings.length, "listing")} without a map location; switch to List to see them.
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -372,6 +449,7 @@ const ReceiverDashboard = () => {
                     onConfirm={(requestId) =>
                       setSelectedAction({ requestId, action: "confirm" })
                     }
+                    aiReason={aiReasons.get(item.id)}
                   />
                 );
               })}
@@ -397,20 +475,43 @@ const ReceiverDashboard = () => {
           </IconButton>
         }
       >
-        <FoodSearchForm
-          id="recipient-search-modal"
-          value={searchDraft}
-          appliedValue={appliedSearch}
-          resultCount={filtered.length}
-          showResultCount={false}
-          placeholder="Filter listings by food name or pickup location..."
-          onValueChange={setSearchDraft}
-          onSubmit={() => {
-            applySearch();
-            setSearchOpen(false);
-          }}
-          onClear={clearSearch}
-        />
+        <Tabs.Root value={searchMode} onValueChange={(value) => setSearchMode(value as "ai" | "keyword")}>
+          <Tabs.List>
+            <Tabs.Trigger value="ai"><Sparkles className="mr-1.5 h-4 w-4" /> Ask AI</Tabs.Trigger>
+            <Tabs.Trigger value="keyword"><Search className="mr-1.5 h-4 w-4" /> Keyword</Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Content value="ai" className="pt-4">
+            <AskAIFoodSearch
+              near={receiverLocation.position}
+              countMatches={(result) => aiPicks(result).length}
+              onApply={(result) => {
+                setAiResult(result);
+                setSearchOpen(false);
+              }}
+              onFallbackToKeyword={(query) => {
+                setSearchMode("keyword");
+                setSearchDraft(query);
+              }}
+            />
+          </Tabs.Content>
+          <Tabs.Content value="keyword" className="pt-4">
+            <FoodSearchForm
+              id="recipient-search-modal"
+              value={searchDraft}
+              appliedValue={appliedSearch}
+              resultCount={keywordMatches.length}
+              showResultCount={false}
+              placeholder="Filter listings by food name or pickup location..."
+              onValueChange={setSearchDraft}
+              onSubmit={() => {
+                applySearch();
+                setAiResult(null);
+                setSearchOpen(false);
+              }}
+              onClear={clearSearch}
+            />
+          </Tabs.Content>
+        </Tabs.Root>
       </AppModal>
       <ReceiverRequestFlow
         requestListing={requestListing}

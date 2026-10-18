@@ -1,5 +1,5 @@
 import { Badge, Button, Card, IconButton, Tooltip } from "@radix-ui/themes";
-import { CheckCircle, MapPin, Package, Undo2 } from "lucide-react";
+import { CheckCircle, MapPin, Package, Sparkles, Undo2 } from "lucide-react";
 import ListingPhoto from "@/components/ListingPhoto";
 import ExpiryCountdown from "@/components/ExpiryCountdown";
 import ListingTimeline from "@/components/ListingTimeline";
@@ -15,6 +15,8 @@ type ReceiverListingCardProps = {
   onRequest: (id: string) => void;
   onCancel: (id: string) => void;
   onConfirm: (id: string) => void;
+  // Why the AI search picked this listing, shown while AI results are on screen.
+  aiReason?: string;
 };
 
 // Keeps one listing and the receiver's lifecycle presentation isolated from dashboard data orchestration.
@@ -25,6 +27,7 @@ const ReceiverListingCard = ({
   onRequest,
   onCancel,
   onConfirm,
+  aiReason,
 }: ReceiverListingCardProps) => {
   const status = request?.status;
   const hasRequested =
@@ -57,6 +60,11 @@ const ReceiverListingCard = ({
               {listing.notes && (
                 <p className="mt-3 text-sm text-muted-foreground">
                   {listing.notes}
+                </p>
+              )}
+              {aiReason && (
+                <p className="flex items-center gap-1.5 text-sm text-primary">
+                  <Sparkles className="h-3.5 w-3.5 shrink-0" /> {aiReason}
                 </p>
               )}
             </div>
