@@ -9,3 +9,4 @@ These accounts are for local development only.
 | ngo | ngo@overflow.local | overflowDev123! |
 | donor | grocer@overflow.local | overflowDev123! |
 | donor | kitchen@overflow.local | overflowDev123! |
+| donor | restaurants@overflow.local | overflowDev123! |

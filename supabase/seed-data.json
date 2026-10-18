@@ -29,6 +29,12 @@
       "email": "kitchen@overflow.local",
       "fullName": "Synthetic Restaurant Donor",
       "role": "donor"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000006",
+      "email": "restaurants@overflow.local",
+      "fullName": "Campus Restaurants (demo)",
+      "role": "donor"
     }
   ],
   "listings": [
@@ -1065,6 +1071,362 @@
       "latitude": 36.1771,
       "longitude": -86.7516,
       "expiryOffsetHours": 2160,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000051",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Assorted bagels",
+      "category": "bakery",
+      "tags": [
+        "vegetarian",
+        "cold",
+        "small_meal"
+      ],
+      "description": "Plain, sesame and everything bagels left from the morning bake. Demo listing, not from the restaurant.",
+      "quantity": 24,
+      "location": "Bruegger's Bagels",
+      "latitude": 36.145906,
+      "longitude": -86.79933,
+      "expiryOffsetHours": 36,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000052",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Day-old bread loaves",
+      "category": "bakery",
+      "tags": [
+        "vegetarian",
+        "cold",
+        "large_meal"
+      ],
+      "description": "Sourdough and whole-grain loaves from yesterday's bake. Demo listing, not from the restaurant.",
+      "quantity": 10,
+      "location": "Panera Bread, 406 21st Avenue South",
+      "latitude": 36.146625,
+      "longitude": -86.799142,
+      "expiryOffsetHours": 30,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000053",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Chicken burrito bowls",
+      "category": "prepared_meals",
+      "tags": [
+        "warm",
+        "small_meal"
+      ],
+      "description": "Rice, beans, grilled chicken and salsa in single-serve bowls. Demo listing, not from the restaurant.",
+      "quantity": 12,
+      "location": "Chipotle, 400 21st Avenue South",
+      "latitude": 36.147275,
+      "longitude": -86.798854,
+      "expiryOffsetHours": 6,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000054",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Turkey sub sandwiches",
+      "category": "prepared_meals",
+      "tags": [
+        "cold",
+        "small_meal"
+      ],
+      "description": "Wrapped turkey and provolone subs from the lunch rush. Demo listing, not from the restaurant.",
+      "quantity": 15,
+      "location": "Jersey Mike's Subs, 2311 Elliston Place",
+      "latitude": 36.149123,
+      "longitude": -86.805941,
+      "expiryOffsetHours": 8,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000055",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Bean and cheese burritos",
+      "category": "prepared_meals",
+      "tags": [
+        "vegetarian",
+        "warm",
+        "small_meal"
+      ],
+      "description": "Foil-wrapped burritos; reheat before eating. Demo listing, not from the restaurant.",
+      "quantity": 18,
+      "location": "Oscar's Taco Shop, 2323 Elliston Place",
+      "latitude": 36.148932,
+      "longitude": -86.806221,
+      "expiryOffsetHours": 10,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000056",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Pulled pork trays",
+      "category": "prepared_meals",
+      "tags": [
+        "warm",
+        "large_meal"
+      ],
+      "description": "Half pans of smoked pulled pork, each feeds about 8. Demo listing, not from the restaurant.",
+      "quantity": 4,
+      "location": "Martin's Bar-B-Que Joint, 2400 Elliston Place",
+      "latitude": 36.148693,
+      "longitude": -86.807435,
+      "expiryOffsetHours": 12,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000057",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Vegetable fried rice",
+      "category": "prepared_meals",
+      "tags": [
+        "vegetarian",
+        "warm",
+        "small_meal"
+      ],
+      "description": "Takeout containers of wok-fried rice with vegetables. Demo listing, not from the restaurant.",
+      "quantity": 14,
+      "location": "P.F. Chang's, 2525 West End Avenue",
+      "latitude": 36.146025,
+      "longitude": -86.809325,
+      "expiryOffsetHours": 10,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000058",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Tofu pad see ew",
+      "category": "prepared_meals",
+      "tags": [
+        "vegetarian",
+        "warm",
+        "small_meal"
+      ],
+      "description": "Wide rice noodles with tofu and Chinese broccoli. Demo listing, not from the restaurant.",
+      "quantity": 8,
+      "location": "Satay, 2412 Elliston Place",
+      "latitude": 36.148258,
+      "longitude": -86.80808,
+      "expiryOffsetHours": 10,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000059",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "California rolls",
+      "category": "prepared_meals",
+      "tags": [
+        "cold",
+        "small_meal"
+      ],
+      "description": "Boxed sushi rolls with imitation crab; keep cold. Demo listing, not from the restaurant.",
+      "quantity": 12,
+      "location": "Nama, 2300 Elliston Place",
+      "latitude": 36.150106,
+      "longitude": -86.805746,
+      "expiryOffsetHours": 5,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000060",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Cheese pizzas",
+      "category": "prepared_meals",
+      "tags": [
+        "vegetarian",
+        "warm",
+        "large_meal"
+      ],
+      "description": "Whole 18-inch cheese pies; reheat in the oven. Demo listing, not from the restaurant.",
+      "quantity": 5,
+      "location": "Two Boots Nashville, 1925 Broadway",
+      "latitude": 36.149355,
+      "longitude": -86.79813,
+      "expiryOffsetHours": 10,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000061",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Garden salads",
+      "category": "prepared_meals",
+      "tags": [
+        "vegetarian",
+        "cold",
+        "small_meal"
+      ],
+      "description": "Mixed greens with vegetables; dressing on the side. Demo listing, not from the restaurant.",
+      "quantity": 16,
+      "location": "Jason's Deli, 2028 West End Avenue",
+      "latitude": 36.150797,
+      "longitude": -86.800917,
+      "expiryOffsetHours": 8,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000062",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Meat-and-three plates",
+      "category": "prepared_meals",
+      "tags": [
+        "warm",
+        "small_meal"
+      ],
+      "description": "Plates with a meat and three Southern sides. Demo listing, not from the restaurant.",
+      "quantity": 10,
+      "location": "Elliston Place Soda Shop, 2105 Elliston Place",
+      "latitude": 36.151786,
+      "longitude": -86.803209,
+      "expiryOffsetHours": 8,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000063",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Chips and salsa",
+      "category": "snacks",
+      "tags": [
+        "vegan",
+        "vegetarian",
+        "cold",
+        "snack"
+      ],
+      "description": "Bagged tortilla chips with cups of house salsa. Demo listing, not from the restaurant.",
+      "quantity": 25,
+      "location": "Taco Mama, 1612 21st Avenue South",
+      "latitude": 36.138241,
+      "longitude": -86.800496,
+      "expiryOffsetHours": 48,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000064",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Penne marinara trays",
+      "category": "prepared_meals",
+      "tags": [
+        "vegan",
+        "vegetarian",
+        "warm",
+        "large_meal"
+      ],
+      "description": "Half pans of penne in tomato sauce, each feeds about 6. Demo listing, not from the restaurant.",
+      "quantity": 4,
+      "location": "Amerigo, 1920 West End Avenue",
+      "latitude": 36.151692,
+      "longitude": -86.799267,
+      "expiryOffsetHours": 14,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000065",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Fried chicken tenders",
+      "category": "prepared_meals",
+      "tags": [
+        "warm",
+        "small_meal"
+      ],
+      "description": "Boxes of tenders, mild heat, with a slice of bread. Demo listing, not from the restaurant.",
+      "quantity": 12,
+      "location": "Hattie B's Hot Chicken, 112 19th Avenue South",
+      "latitude": 36.151493,
+      "longitude": -86.796624,
+      "expiryOffsetHours": 8,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000066",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Vegetable dumplings",
+      "category": "prepared_meals",
+      "tags": [
+        "vegetarian",
+        "warm",
+        "small_meal"
+      ],
+      "description": "Steamed dumplings, 8 per box, with dipping sauce. Demo listing, not from the restaurant.",
+      "quantity": 20,
+      "location": "Dumpling House, 2117 Belcourt Avenue",
+      "latitude": 36.13661,
+      "longitude": -86.802373,
+      "expiryOffsetHours": 10,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000067",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Chicken shawarma plates",
+      "category": "prepared_meals",
+      "tags": [
+        "warm",
+        "small_meal"
+      ],
+      "description": "Rice plates with shawarma chicken and salad. Demo listing, not from the restaurant.",
+      "quantity": 10,
+      "location": "Only Chicken, 2127 Belcourt Avenue",
+      "latitude": 36.136661,
+      "longitude": -86.80323,
+      "expiryOffsetHours": 8,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000068",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Glazed doughnuts",
+      "category": "bakery",
+      "tags": [
+        "vegetarian",
+        "cold",
+        "snack"
+      ],
+      "description": "Original glazed doughnuts by the dozen. Demo listing, not from the restaurant.",
+      "quantity": 36,
+      "location": "Krispy Kreme",
+      "latitude": 36.152083,
+      "longitude": -86.802643,
+      "expiryOffsetHours": 20,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000069",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Vegetable biryani",
+      "category": "prepared_meals",
+      "tags": [
+        "vegetarian",
+        "warm",
+        "large_meal"
+      ],
+      "description": "Family trays of spiced vegetable biryani. Demo listing, not from the restaurant.",
+      "quantity": 5,
+      "location": "Nawabi Hyderabad House - Biryani Place, 106 29th Avenue North",
+      "latitude": 36.145214,
+      "longitude": -86.813525,
+      "expiryOffsetHours": 12,
+      "status": "available"
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000070",
+      "donorId": "10000000-0000-4000-8000-000000000006",
+      "foodName": "Hummus and pita boxes",
+      "category": "snacks",
+      "tags": [
+        "vegan",
+        "vegetarian",
+        "cold",
+        "snack"
+      ],
+      "description": "Hummus with pita and cucumber slices. Demo listing, not from the restaurant.",
+      "quantity": 15,
+      "location": "Taziki’s Mediterranean Cafe, 3001 West End Avenue",
+      "latitude": 36.143932,
+      "longitude": -86.81365,
+      "expiryOffsetHours": 20,
       "status": "available"
     }
   ],
