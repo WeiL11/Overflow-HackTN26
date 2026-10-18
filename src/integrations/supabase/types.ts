@@ -16,43 +16,58 @@ export type Database = {
     Tables: {
       food_listings: {
         Row: {
+          category: string
           photo_path: string | null
           food_analysis: Json | null
           created_at: string
+          description: string | null
           donor_id: string
           expiry_time: string
           food_name: string
           id: string
+          latitude: number | null
           location: string
+          longitude: number | null
           notes: string | null
           quantity: number
           status: string
+          tags: string[]
         }
         Insert: {
+          category?: string
           photo_path?: string | null
           food_analysis?: Json | null
           created_at?: string
+          description?: string | null
           donor_id: string
           expiry_time: string
           food_name: string
           id?: string
+          latitude?: number | null
           location: string
+          longitude?: number | null
           notes?: string | null
           quantity: number
           status?: string
+          tags?: string[]
         }
         Update: {
+          category?: string
           photo_path?: string | null
           food_analysis?: Json | null
           created_at?: string
+          description?: string | null
           donor_id?: string
           expiry_time?: string
           food_name?: string
           id?: string
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           notes?: string | null
           quantity?: number
           status?: string
+          tags?: string[]
         }
         Relationships: []
       }

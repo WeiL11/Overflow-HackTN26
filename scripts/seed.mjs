@@ -1,52 +1,15 @@
-import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { resolveSeedUserIds } from "./seed-users.mjs";
+import { listingExpiry } from "./seed-time.mjs";
 import { generateDevAccounts } from "./generate-dev-accounts.mjs";
+import { getLocalCredentials } from "./local-supabase.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const seedDataPath = path.join(rootDir, "supabase", "seed-data.json");
 const envLocalPath = path.join(rootDir, ".env.local");
-
-const parseStatusEnv = (output) =>
-  Object.fromEntries(
-    output
-      .split(/\r?\n/)
-      .map((line) => line.match(/^([A-Z_]+)=(.*)$/))
-      .filter(Boolean)
-      .map(([, key, value]) => [key, value.replace(/^"(.*)"$/, "$1")]),
-  );
-
-const getLocalCredentials = () => {
-  try {
-    const output = execFileSync("npx", ["supabase", "status", "-o", "env"], {
-      cwd: rootDir,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 15000,
-    });
-    const values = parseStatusEnv(output);
-    const required = ["API_URL", "ANON_KEY", "SERVICE_ROLE_KEY"];
-    if (required.some((key) => !values[key])) {
-      throw new Error("Supabase status did not return the required local credentials.");
-    }
-    const apiUrl = new URL(values.API_URL);
-    if (!["localhost", "127.0.0.1"].includes(apiUrl.hostname)) {
-      throw new Error("Seeding is only allowed against a local Supabase API.");
-    }
-    return { apiUrl: apiUrl.toString().replace(/\/$/, ""), anonKey: values.ANON_KEY, serviceRoleKey: values.SERVICE_ROLE_KEY };
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("required local credentials")) {
-      throw error;
-    }
-    if (error instanceof Error && error.message.includes("only allowed")) {
-      throw error;
-    }
-    throw new Error("Unable to read local Supabase status.");
-  }
-};
 
 const assertResponse = ({ data, error }, operation) => {
   if (error) {
@@ -103,15 +66,20 @@ const seed = async () => {
     assertResponse(profileResponse, `Upserting profile ${user.email}`);
   }
 
-  const expiryBase = Date.now();
+  const seededAt = new Date();
   const listings = seedData.listings.map((listing) => ({
     id: listing.id,
     donor_id: userIds.get(listing.donorId) || listing.donorId,
     food_name: listing.foodName,
+    category: listing.category ?? "other",
+    tags: listing.tags ?? [],
+    description: listing.description ?? null,
     quantity: listing.quantity,
     location: listing.location,
+    latitude: listing.latitude ?? null,
+    longitude: listing.longitude ?? null,
     notes: listing.notes || null,
-    expiry_time: new Date(expiryBase + listing.expiryOffsetHours * 60 * 60 * 1000).toISOString(),
+    expiry_time: listingExpiry(listing, seededAt).toISOString(),
     status: listing.status,
   }));
   assertResponse(await admin.from("food_listings").upsert(listings, { onConflict: "id" }), "Upserting food listings");

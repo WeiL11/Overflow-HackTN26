@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getBrowserPosition, type LatLng } from '@/lib/geo';
 
 export interface FoodPhotoSuggestion {
   isFood: boolean;
@@ -75,26 +76,22 @@ export const toDatetimeLocal = (date: Date): string => {
   return local.toISOString().slice(0, 16);
 };
 
-const getPosition = () =>
-  new Promise<GeolocationPosition>((resolve, reject) =>
-    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 8000, maximumAge: 300_000 }),
-  );
-
 // Turn the browser's current position into a street address (OpenStreetMap Nominatim).
 // Geolocation only works on HTTPS or localhost; returns null when unavailable or denied.
-export const detectCurrentAddress = async (): Promise<string | null> => {
-  if (!window.isSecureContext || !('geolocation' in navigator)) return null;
+export const detectCurrentAddress = async (): Promise<{ address: string; position: LatLng } | null> => {
+  const position = await getBrowserPosition();
+  if (!position) return null;
+  const fallback = `${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}`;
   try {
-    const { coords } = await getPosition();
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&lat=${coords.latitude}&lon=${coords.longitude}`;
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&lat=${position.lat}&lon=${position.lng}`;
     const response = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!response.ok) throw new Error('reverse geocoding failed');
     const { address, display_name: displayName } = await response.json();
     const street = [address?.house_number, address?.road].filter(Boolean).join(' ');
     const city = address?.city || address?.town || address?.village || address?.suburb;
     const short = [street, city, address?.state].filter(Boolean).join(', ');
-    return short || displayName || `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
+    return { address: short || displayName || fallback, position };
   } catch {
-    return null;
+    return { address: fallback, position };
   }
 };

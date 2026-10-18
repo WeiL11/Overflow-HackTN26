@@ -7,3 +7,6 @@ These accounts are for local development only.
 | donor | donor@overflow.local | overflowDev123! |
 | receiver | receiver@overflow.local | overflowDev123! |
 | ngo | ngo@overflow.local | overflowDev123! |
+| donor | grocer@overflow.local | overflowDev123! |
+| donor | kitchen@overflow.local | overflowDev123! |
+| donor | restaurants@overflow.local | overflowDev123! |

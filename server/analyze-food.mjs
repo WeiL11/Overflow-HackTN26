@@ -1,14 +1,17 @@
-// Small API server that turns a food photo into donation form suggestions
-// using an OCI Generative AI vision model.
+// Small API server for the app's OCI Generative AI features.
 //
 //   POST /api/analyze-food  { image: "data:image/jpeg;base64,..." }
 //   -> { foodName, quantity, shelfLifeHours, description, model }
+//   POST /api/search-food   { query: "vegetarian dinner for 4, no nuts" }
+//   -> { summary, filters, results: [{ id, reason }], model, requestId, fallback }
 //
 // Requests must carry the signed-in user's Supabase access token so only
 // logged-in users can spend OCI credits. OCI credentials come from
 // ~/.oci/config (see server/README.md).
 import http from "node:http";
 import { createRequire } from "node:module";
+
+import { buildCatalog, buildSearchPrompt, extractJson, keywordSearch, normalizeSearchResponse } from "./searchFood.mjs";
 
 const require = createRequire(import.meta.url);
 
@@ -79,18 +82,13 @@ const getUser = async (authHeader) => {
   return r.ok ? r.json() : null;
 };
 
-const extractJson = (text) => {
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("Model did not return JSON.");
-  return JSON.parse(match[0]);
-};
-
 const clampInt = (value, min, max, fallback) => {
   const n = Math.round(Number(value));
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
 };
 
-const analyze = async (image) => {
+// Ask each model in turn until one returns parseable JSON.
+const chatJson = async (content, maxTokens) => {
   let lastError;
   for (const modelId of MODELS) {
     try {
@@ -100,41 +98,88 @@ const analyze = async (image) => {
           servingMode: { servingType: "ON_DEMAND", modelId },
           chatRequest: {
             apiFormat: "GENERIC",
-            maxTokens: 300,
+            maxTokens,
             temperature: 0,
-            messages: [{
-              role: "USER",
-              content: [
-                { type: "TEXT", text: PROMPT },
-                { type: "IMAGE", imageUrl: { url: image } },
-              ],
-            }],
+            messages: [{ role: "USER", content }],
           },
         },
       });
       const text = response.chatResult.chatResponse.choices[0].message.content
         .map((part) => part.text || "")
         .join("");
-      const raw = extractJson(text);
-      return {
-        isFood: raw.isFood !== false,
-        foodName: String(raw.foodName || "").trim().slice(0, 80),
-        quantity: clampInt(raw.quantity, 1, 1000, 1),
-        shelfLifeHours: null,
-        description: String(raw.description || "").trim().slice(0, 200),
-        model: modelId,
-      };
+      const usage = response.chatResult.chatResponse.usage;
+      return { raw: extractJson(text), model: modelId, requestId: response.opcRequestId, tokens: usage?.totalTokens ?? null };
     } catch (error) {
       lastError = error;
-      console.warn(`[analyze-food] ${modelId} failed: ${error.statusCode || ""} ${error.message}`);
+      console.warn(`[ai] ${modelId} failed: ${error.statusCode || ""} ${error.message}`);
     }
   }
   throw lastError;
 };
 
+const analyze = async (image) => {
+  const { raw, model } = await chatJson([
+    { type: "TEXT", text: PROMPT },
+    { type: "IMAGE", imageUrl: { url: image } },
+  ], 300);
+  return {
+    isFood: raw.isFood !== false,
+    foodName: String(raw.foodName || "").trim().slice(0, 80),
+    quantity: clampInt(raw.quantity, 1, 1000, 1),
+    // Donors set Pick Up By themselves; the model never judges how long food stays safe.
+    shelfLifeHours: null,
+    description: String(raw.description || "").trim().slice(0, 200),
+    model,
+  };
+};
+
+// Available, unexpired listings as the signed-in user sees them (RLS applies).
+const fetchAvailableListings = async (authHeader) => {
+  const params = new URLSearchParams({
+    select: "id,food_name,category,tags,description,quantity,location,expiry_time,latitude,longitude",
+    status: "eq.available",
+    expiry_time: `gte.${new Date().toISOString()}`,
+    order: "created_at.desc",
+    limit: "200",
+  });
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/food_listings?${params}`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: authHeader },
+  });
+  if (!r.ok) throw new Error(`Loading listings failed (${r.status}).`);
+  return r.json();
+};
+
+const searchFood = async (query, near, authHeader) => {
+  const listings = await fetchAvailableListings(authHeader);
+  if (listings.length === 0) {
+    return { summary: "", filters: { categories: [], mustHaveTags: [], avoidTags: [] }, results: [], model: null, requestId: null, fallback: false };
+  }
+  const catalog = buildCatalog(listings, Date.now(), near);
+  try {
+    const { raw, model, requestId, tokens } = await chatJson([{ type: "TEXT", text: buildSearchPrompt(query, catalog.text) }], 900);
+    return { ...normalizeSearchResponse(raw, listings, catalog.idMap, near, query), model, requestId, tokens, fallback: false };
+  } catch (error) {
+    console.warn(`[search-food] falling back to keyword search: ${error.message}`);
+    return { ...keywordSearch(query, listings, near), model: null, requestId: null, fallback: true };
+  }
+};
+
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === "GET" && req.url === "/api/health") return json(res, 200, { ok: true });
+    if (req.method === "POST" && req.url === "/api/search-food") {
+      const user = await getUser(req.headers.authorization);
+      if (!user) return json(res, 401, { error: "Please log in to search with AI." });
+      const { query, near } = JSON.parse((await readBody(req)) || "{}");
+      const validNear = Number.isFinite(near?.lat) && Number.isFinite(near?.lng) ? { lat: near.lat, lng: near.lng } : null;
+      if (typeof query !== "string" || !query.trim() || query.length > 300) {
+        return json(res, 400, { error: "Describe what you need in 300 characters or less." });
+      }
+      const started = Date.now();
+      const result = await searchFood(query.trim(), validNear, req.headers.authorization);
+      console.log(`[search-food] user=${user.id} model=${result.model ?? "keyword"} oci-request-id=${result.requestId ?? "-"} tokens=${result.tokens ?? "-"} ${Date.now() - started}ms -> ${result.results.length} results`);
+      return json(res, 200, result);
+    }
     if (req.method !== "POST" || req.url !== "/api/analyze-food") return json(res, 404, { error: "Not found" });
 
     const user = await getUser(req.headers.authorization);
@@ -150,11 +195,14 @@ const server = http.createServer(async (req, res) => {
     console.log(`[analyze-food] user=${user.id} model=${result.model} ${Date.now() - started}ms -> ${result.foodName}`);
     return json(res, 200, result);
   } catch (error) {
-    console.error("[analyze-food]", error.message);
-    return json(res, error.status || 502, { error: error.status ? error.message : "Couldn't analyze the photo. Please fill in the form manually." });
+    console.error(`[${req.url}]`, error.message);
+    const fallbackMessage = req.url === "/api/search-food"
+      ? "AI search is unavailable right now. Try a keyword search."
+      : "Couldn't analyze the photo. Please fill in the form manually.";
+    return json(res, error.status || 502, { error: error.status ? error.message : fallbackMessage });
   }
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`analyze-food API listening on http://${HOST}:${PORT} (models: ${MODELS.join(", ")})`);
+  console.log(`AI API (analyze-food, search-food) listening on http://${HOST}:${PORT} (models: ${MODELS.join(", ")})`);
 });

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
+import { geocodeAddress, type LatLng } from '@/lib/geo';
 import ListingPhoto from '@/components/ListingPhoto';
 import type { Json } from '@/integrations/supabase/types';
 import { analyzeFoodPhoto, detectCurrentAddress, resizeImage, toDatetimeLocal } from '@/lib/foodPhoto';
@@ -13,6 +14,9 @@ import { advanceFoodRequest, createFoodListing, deleteFoodListing, getDonorListi
 import { Badge, Button, Card, Text, TextArea, TextField, type BadgeProps } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import { Plus, Package, MapPin, Trash2, CheckCircle, XCircle, User, Building2, Camera, Sparkles, Loader2, Check } from 'lucide-react';
+
+// Listings are timed by pickup deadline (closing time or last pickup), not food expiry.
+const MAX_PICKUP_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const DonorDashboard = () => {
   const { user, profile, loading: authLoading } = useAuth();
@@ -34,6 +38,7 @@ const DonorDashboard = () => {
   const [analysisError, setAnalysisError] = useState('');
   const [aiFilled, setAiFilled] = useState(false);
   const [locationSource, setLocationSource] = useState<'gps' | 'previous' | null>(null);
+  const [gpsFill, setGpsFill] = useState<{ address: string; position: LatLng } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,6 +58,7 @@ const DonorDashboard = () => {
     setAiFilled(false);
     setAnalysisError('');
     setLocationSource(null);
+    setGpsFill(null);
   };
 
   const previousLocation = listings[0]?.location;
@@ -61,10 +67,11 @@ const DonorDashboard = () => {
     if (!showForm || location) return;
     let cancelled = false;
     (async () => {
-      const address = await detectCurrentAddress();
+      const detected = await detectCurrentAddress();
       if (cancelled) return;
-      if (address) {
-        setLocation(current => current || address);
+      if (detected) {
+        setLocation(current => current || detected.address);
+        setGpsFill(detected);
         setLocationSource('gps');
       } else if (previousLocation) {
         setLocation(current => current || previousLocation);
@@ -156,8 +163,13 @@ const DonorDashboard = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || submitting || analyzing) return;
-    if (!Number.isFinite(new Date(expiryTime).getTime()) || new Date(expiryTime).getTime() <= Date.now()) {
-      toast.error("Choose a future availability time.");
+    const pickupBy = new Date(expiryTime).getTime();
+    if (!Number.isFinite(pickupBy) || pickupBy <= Date.now()) {
+      toast.error('Choose a future pickup time.');
+      return;
+    }
+    if (pickupBy > Date.now() + MAX_PICKUP_WINDOW_MS) {
+      toast.error('Pickup must be within the next 24 hours.');
       return;
     }
     const parsedQuantity = Number.parseInt(quantity, 10);
@@ -172,11 +184,15 @@ const DonorDashboard = () => {
     }
     setSubmitting(true);
     try {
+      // Pin the listing on the receivers' map: GPS if the donor kept the detected address, else look it up.
+      const position = gpsFill?.address === location ? gpsFill.position : await geocodeAddress(location);
       await createFoodListing({
         donor_id: user.id,
         food_name: foodName,
         quantity: parsedQuantity,
         location,
+        latitude: position?.lat ?? null,
+        longitude: position?.lng ?? null,
         expiry_time: new Date(expiryTime).toISOString(),
         notes: listingNotes.trim() || null,
         food_analysis: analysis,
@@ -527,8 +543,9 @@ const DonorDashboard = () => {
                 )}
               </div>
               <div className="space-y-2">
-                <Text as="label" size="2" weight="medium" htmlFor="expiry">Available Until</Text>
-                <TextField.Root id="expiry" type="datetime-local" value={expiryTime} onChange={e => setExpiryTime(e.target.value)} required min={toDatetimeLocal(new Date())} />
+                <Text as="label" size="2" weight="medium" htmlFor="expiry">Pick Up By</Text>
+                <TextField.Root id="expiry" type="datetime-local" value={expiryTime} onChange={e => setExpiryTime(e.target.value)} required min={toDatetimeLocal(new Date())} max={toDatetimeLocal(new Date(Date.now() + MAX_PICKUP_WINDOW_MS))} />
+                <Text as="p" size="1" color="gray">Your closing time or the last time someone can pick up, within the next 24 hours.</Text>
               </div>
             </div>
             {aiFilled && (

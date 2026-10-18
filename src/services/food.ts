@@ -2,7 +2,7 @@ import type { Json, TablesInsert } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import type { FoodListing, FoodRequest, ProfileSummary, RecipientRequest } from '@/types/food';
 
-export type CreateFoodListingInput = Pick<TablesInsert<'food_listings'>, 'donor_id' | 'food_name' | 'quantity' | 'location' | 'expiry_time' | 'notes' | 'food_analysis'>;
+export type CreateFoodListingInput = Pick<TablesInsert<'food_listings'>, 'donor_id' | 'food_name' | 'quantity' | 'location' | 'latitude' | 'longitude' | 'expiry_time' | 'notes' | 'food_analysis'>;
 export type ReserveFoodInput = { listingId: string; quantity: number; notes?: string };
 
 export const getDonorListings = async (donorId: string): Promise<FoodListing[]> => {
