@@ -202,24 +202,11 @@ const DonorListingCard = ({
                               <ArrowLeft className="h-4 w-4" />
                             </IconButton>
                           </Tooltip>
-                          {!request.pickup_confirmed_at && (
-                            <Tooltip content="Decline">
-                              <IconButton
-                                size="1"
-                                variant="ghost"
-                                className="!bg-transparent text-destructive hover:!bg-red-500/10"
-                                onClick={() => onDecline(request.id)}
-                                aria-label="Decline"
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
                           <Tooltip content="Mark as Complete">
                             <IconButton
                               size="1"
                               variant="ghost"
-                              className="!bg-transparent text-primary hover:!bg-transparant"
+                              className="!bg-transparent text-primary hover:!bg-primary/10"
                               onClick={() => onDone(request.id)}
                               aria-label="Done"
                             >
