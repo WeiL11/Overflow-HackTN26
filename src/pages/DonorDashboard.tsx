@@ -15,6 +15,8 @@ import {
   expandAvailabilityBlocks,
   getDuplicatedPickupBlocks,
   validatePickupBlocks,
+  defaultPickupBlocks,
+  trimStartedPickupBlocks,
 } from "@/lib/pickupSlots";
 import WeeklySchedule from "@/components/WeeklySchedule";
 import { getListingDisplayStatus } from "@/lib/listingStatus";
@@ -287,6 +289,8 @@ const DonorDashboard = () => {
       locationInputRef.current?.focus();
       return;
     }
+    // Start with pickup open from now until the expiration; the donor can adjust it.
+    if (pickupBlocks.length === 0) setPickupBlocks(defaultPickupBlocks(expiryTime));
     setAddStep(2);
   };
 
@@ -297,14 +301,16 @@ const DonorDashboard = () => {
       return;
     }
     if (!user || submitting || analyzing) return;
-    const pickupError = validatePickupBlocks(pickupBlocks);
+    // Times picked a few minutes ago may have started by now; trim them instead of failing.
+    const blocksToSave = trimStartedPickupBlocks(pickupBlocks);
+    const pickupError = validatePickupBlocks(blocksToSave);
     if (pickupError) {
       toast.error(pickupError);
       return;
     }
     const expiration = new Date(expiryTime).getTime();
     if (
-      pickupBlocks.some(
+      blocksToSave.some(
         (block) => new Date(block.endsAt).getTime() > expiration,
       )
     ) {
@@ -339,7 +345,7 @@ const DonorDashboard = () => {
               ? { lat: FEATHERINGILL.lat, lng: FEATHERINGILL.lng }
               : await geocodeAddress(location),
           notes: listingNotes.trim() || null,
-          pickupBlocks,
+          pickupBlocks: blocksToSave,
           foodAnalysis: analysis,
           sourcePhotoPath,
         },

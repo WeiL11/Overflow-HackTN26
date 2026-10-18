@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { IconButton, ScrollArea, Tooltip } from '@radix-ui/themes';
 import { Check, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import type { AvailabilityBlock, PickupSlotAvailability } from '@/types/food';
@@ -31,12 +31,33 @@ const WeeklySchedule = (props: WeeklyScheduleProps) => {
     ? new Map(props.slots.map(slot => [new Date(slot.starts_at).toISOString(), slot]))
     : new Map<string, PickupSlotAvailability>();
 
+  // Open scrolled to an hour before now, so the selectable times are in view.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const now = new Date(props.now ?? Date.now());
+    const rowHeight = 20; // h-5
+    const target = Math.max(0, ((now.getHours() - 1) * 60 + now.getMinutes()) / PickupIntervalMinutes.Fifteen * rowHeight);
+    // The schedule often mounts inside an opening dialog; retry until the grid has its height.
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      // Radix Themes forwards the ScrollArea ref to the scrolling viewport itself.
+      const root = scrollRef.current;
+      const viewport = root?.matches('[data-radix-scroll-area-viewport]') ? root : root?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]');
+      if (viewport && viewport.scrollHeight > viewport.clientHeight) {
+        viewport.scrollTop = target;
+        window.clearInterval(timer);
+      } else if (++tries > 20) window.clearInterval(timer);
+    }, 50);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => { const stopPainting = () => setPainting(false); window.addEventListener('pointerup', stopPainting); return () => window.removeEventListener('pointerup', stopPainting); }, []);
   const toggleCell = (key: string) => { if (lockedStarts.has(key)) return; const next = new Set(selectedCells); if (next.has(key)) next.delete(key); else next.add(key); if (!isSelect) props.onChange(mergeSelectedCells([...next])); };
 
   return <div className="space-y-3">
     <div className="flex flex-wrap items-center justify-between gap-2"><Tooltip content="Previous Week"><IconButton type="button" variant="ghost" size="1" aria-label="Previous Week" onClick={() => setWeekStart(date => new Date(date.getTime() - 7 * 86400000))}><ChevronLeft className="h-4 w-4" /></IconButton></Tooltip><span className="text-sm font-medium">{formatDay(days[0])} – {formatDay(days[6])}</span><Tooltip content="Next Week"><IconButton type="button" variant="ghost" size="1" aria-label="Next Week" onClick={() => setWeekStart(date => new Date(date.getTime() + 7 * 86400000))}><ChevronRight className="h-4 w-4" /></IconButton></Tooltip></div>
-    <ScrollArea type="auto" scrollbars="both" className="h-[55vh] max-h-[34rem] rounded-lg border"><div className="min-w-[800px]"><div className="sticky top-0 z-20 grid grid-cols-[6.5rem_repeat(7,minmax(0,1fr))] border-b bg-background"><div className="border-r p-2 text-xs text-muted-foreground">Time ({timezone})</div>{days.map(day => <div key={day.toISOString()} className="border-r p-2 text-center text-xs font-medium last:border-r-0">{formatDay(day)}</div>)}</div><div className="grid grid-cols-[6.5rem_repeat(7,minmax(0,1fr))]"><div>{times.map(minutes => <div key={minutes} className="h-5 border-b border-r px-1 text-[10px] text-muted-foreground">{minutes % 60 === 0 ? formatTime(days[0], minutes) : ''}</div>)}</div>{days.map(day => <div key={day.toISOString()} className="border-r last:border-r-0">{times.map(minutes => {
+    <ScrollArea ref={scrollRef} type="auto" scrollbars="both" className="h-[55vh] max-h-[34rem] rounded-lg border"><div className="min-w-[800px]"><div className="sticky top-0 z-20 grid grid-cols-[6.5rem_repeat(7,minmax(0,1fr))] border-b bg-background"><div className="border-r p-2 text-xs text-muted-foreground">Time ({timezone})</div>{days.map(day => <div key={day.toISOString()} className="border-r p-2 text-center text-xs font-medium last:border-r-0">{formatDay(day)}</div>)}</div><div className="grid grid-cols-[6.5rem_repeat(7,minmax(0,1fr))]"><div>{times.map(minutes => <div key={minutes} className="h-5 border-b border-r px-1 text-[10px] text-muted-foreground">{minutes % 60 === 0 ? formatTime(days[0], minutes) : ''}</div>)}</div>{days.map(day => <div key={day.toISOString()} className="border-r last:border-r-0">{times.map(minutes => {
       const key = cellKey(day, minutes);
       const cellStart = new Date(key).getTime();
       const cellEnd = cellStart + PickupIntervalMinutes.Fifteen * 60 * 1000;
