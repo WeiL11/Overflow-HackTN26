@@ -126,7 +126,7 @@ const analyze = async (image) => {
     isFood: raw.isFood !== false,
     foodName: String(raw.foodName || "").trim().slice(0, 80),
     quantity: clampInt(raw.quantity, 1, 1000, 1),
-    // Donors set Available Until themselves; the model never judges how long food stays safe.
+    // Donors set Pick Up By themselves; the model never judges how long food stays safe.
     shelfLifeHours: null,
     description: String(raw.description || "").trim().slice(0, 200),
     model,

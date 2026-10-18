@@ -4,7 +4,7 @@
 Llama 4 Scout):
 
 - `POST /api/analyze-food` powers the "Snap or upload a photo" button on the donor form. It returns
-  suggestions for **Food Name** and a visible **Quantity** estimate. Donors enter **Available Until**
+  suggestions for **Food Name** and a visible **Quantity** estimate. Donors enter **Pick Up By**
   themselves; the model does not assess safe expiry. Pickup Location is filled in the browser from the
   donor's current location (HTTPS or localhost only) or their last donation, and the donor must confirm it.
 - `POST /api/search-food` powers **Ask AI** in the receiver's Search Food dialog. It loads the available

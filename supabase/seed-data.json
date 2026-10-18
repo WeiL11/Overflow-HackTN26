@@ -57,7 +57,7 @@
       "location": "Germantown Farmers Market",
       "latitude": 36.1717,
       "longitude": -86.7862,
-      "expiryOffsetHours": 48,
+      "pickupBy": "14:00",
       "status": "available"
     },
     {
@@ -79,7 +79,7 @@
       "location": "East Nashville Community Fridge",
       "latitude": 36.1771,
       "longitude": -86.7516,
-      "expiryOffsetHours": 72,
+      "pickupBy": "23:00",
       "status": "available"
     },
     {
@@ -101,7 +101,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 41,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -123,7 +123,7 @@
       "location": "The Nations Community Center",
       "latitude": 36.164,
       "longitude": -86.842,
-      "expiryOffsetHours": 44,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -145,7 +145,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 36,
+      "pickupBy": "20:00",
       "status": "available"
     },
     {
@@ -157,7 +157,7 @@
       "location": "Community Kitchen",
       "latitude": 36.158,
       "longitude": -86.77,
-      "expiryOffsetHours": 24,
+      "pickupBy": "20:00",
       "status": "available",
       "category": "produce",
       "tags": [
@@ -190,7 +190,7 @@
       "location": "Germantown Farmers Market",
       "latitude": 36.1717,
       "longitude": -86.7862,
-      "expiryOffsetHours": 36,
+      "pickupBy": "14:00",
       "status": "available"
     },
     {
@@ -211,7 +211,7 @@
       "location": "12 South Neighborhood Bakery",
       "latitude": 36.126,
       "longitude": -86.79,
-      "expiryOffsetHours": 72,
+      "pickupBy": "17:00",
       "status": "available"
     },
     {
@@ -231,7 +231,7 @@
       "location": "12 South Neighborhood Bakery",
       "latitude": 36.126,
       "longitude": -86.79,
-      "expiryOffsetHours": 48,
+      "pickupBy": "17:00",
       "status": "available"
     },
     {
@@ -250,7 +250,7 @@
       "location": "Hillsboro Village Cafe",
       "latitude": 36.1355,
       "longitude": -86.8,
-      "expiryOffsetHours": 48,
+      "pickupBy": "20:00",
       "status": "available"
     },
     {
@@ -271,7 +271,7 @@
       "location": "12 South Neighborhood Bakery",
       "latitude": 36.126,
       "longitude": -86.79,
-      "expiryOffsetHours": 37,
+      "pickupBy": "17:00",
       "status": "available"
     },
     {
@@ -289,7 +289,7 @@
       "location": "Hillsboro Village Cafe",
       "latitude": 36.1355,
       "longitude": -86.8,
-      "expiryOffsetHours": 24,
+      "pickupBy": "20:00",
       "status": "available"
     },
     {
@@ -310,7 +310,7 @@
       "location": "12 South Neighborhood Bakery",
       "latitude": 36.126,
       "longitude": -86.79,
-      "expiryOffsetHours": 72,
+      "pickupBy": "17:00",
       "status": "available"
     },
     {
@@ -329,7 +329,7 @@
       "location": "Belmont Church Kitchen",
       "latitude": 36.1497,
       "longitude": -86.7926,
-      "expiryOffsetHours": 24,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -350,7 +350,7 @@
       "location": "Hillsboro Village Cafe",
       "latitude": 36.1355,
       "longitude": -86.8,
-      "expiryOffsetHours": 18,
+      "pickupBy": "20:00",
       "status": "available"
     },
     {
@@ -372,7 +372,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 24,
+      "pickupBy": "20:00",
       "status": "available"
     },
     {
@@ -391,7 +391,7 @@
       "location": "Downtown Public Library",
       "latitude": 36.1625,
       "longitude": -86.7816,
-      "expiryOffsetHours": 12,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -413,7 +413,7 @@
       "location": "The Nations Community Center",
       "latitude": 36.164,
       "longitude": -86.842,
-      "expiryOffsetHours": 20,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -432,7 +432,7 @@
       "location": "Belmont Church Kitchen",
       "latitude": 36.1497,
       "longitude": -86.7926,
-      "expiryOffsetHours": 24,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -452,7 +452,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 24,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -464,7 +464,7 @@
       "location": "Downtown Cafe",
       "latitude": 36.1612,
       "longitude": -86.7775,
-      "expiryOffsetHours": 8,
+      "pickupBy": "16:00",
       "status": "requested",
       "category": "prepared_meals",
       "tags": [
@@ -491,7 +491,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 12,
+      "pickupBy": "20:00",
       "status": "available"
     },
     {
@@ -510,7 +510,7 @@
       "location": "East Nashville Community Fridge",
       "latitude": 36.1771,
       "longitude": -86.7516,
-      "expiryOffsetHours": 18,
+      "pickupBy": "23:00",
       "status": "available"
     },
     {
@@ -530,7 +530,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 47,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -550,7 +550,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 43,
+      "pickupBy": "20:00",
       "status": "available"
     },
     {
@@ -569,7 +569,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 39,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -589,7 +589,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 45,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -610,7 +610,7 @@
       "location": "The Nations Community Center",
       "latitude": 36.164,
       "longitude": -86.842,
-      "expiryOffsetHours": 48,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -630,7 +630,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 48,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -650,7 +650,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 48,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -674,7 +674,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 49,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -698,7 +698,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 63,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -719,7 +719,7 @@
       "location": "East Nashville Community Fridge",
       "latitude": 36.1771,
       "longitude": -86.7516,
-      "expiryOffsetHours": 51,
+      "pickupBy": "23:00",
       "status": "available"
     },
     {
@@ -740,7 +740,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 64,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -761,7 +761,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 65,
+      "pickupBy": "20:00",
       "status": "available"
     },
     {
@@ -780,7 +780,7 @@
       "location": "Downtown Public Library",
       "latitude": 36.1625,
       "longitude": -86.7816,
-      "expiryOffsetHours": 67,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -804,7 +804,7 @@
       "location": "The Nations Community Center",
       "latitude": 36.164,
       "longitude": -86.842,
-      "expiryOffsetHours": 68,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -823,7 +823,7 @@
       "location": "Downtown Public Library",
       "latitude": 36.1625,
       "longitude": -86.7816,
-      "expiryOffsetHours": 52,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -844,7 +844,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 53,
+      "pickupBy": "20:00",
       "status": "available"
     },
     {
@@ -865,7 +865,7 @@
       "location": "East Nashville Community Fridge",
       "latitude": 36.1771,
       "longitude": -86.7516,
-      "expiryOffsetHours": 55,
+      "pickupBy": "23:00",
       "status": "available"
     },
     {
@@ -887,7 +887,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 56,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -908,7 +908,7 @@
       "location": "Downtown Public Library",
       "latitude": 36.1625,
       "longitude": -86.7816,
-      "expiryOffsetHours": 72,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -929,7 +929,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 40,
+      "pickupBy": "18:00",
       "status": "available"
     },
     {
@@ -949,7 +949,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 57,
+      "pickupBy": "20:00",
       "status": "available"
     },
     {
@@ -968,7 +968,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 69,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -990,7 +990,7 @@
       "location": "East Nashville Community Fridge",
       "latitude": 36.1771,
       "longitude": -86.7516,
-      "expiryOffsetHours": 71,
+      "pickupBy": "23:00",
       "status": "available"
     },
     {
@@ -1008,7 +1008,7 @@
       "location": "Belmont Church Kitchen",
       "latitude": 36.1497,
       "longitude": -86.7926,
-      "expiryOffsetHours": 12,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -1030,7 +1030,7 @@
       "location": "The Nations Community Center",
       "latitude": 36.164,
       "longitude": -86.842,
-      "expiryOffsetHours": 59,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -1049,7 +1049,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 60,
+      "pickupBy": "19:00",
       "status": "available"
     },
     {
@@ -1070,7 +1070,7 @@
       "location": "East Nashville Community Fridge",
       "latitude": 36.1771,
       "longitude": -86.7516,
-      "expiryOffsetHours": 61,
+      "pickupBy": "23:00",
       "status": "available"
     },
     {
@@ -1088,7 +1088,7 @@
       "location": "Bruegger's Bagels",
       "latitude": 36.145906,
       "longitude": -86.79933,
-      "expiryOffsetHours": 36,
+      "pickupBy": "15:00",
       "status": "available"
     },
     {
@@ -1106,7 +1106,7 @@
       "location": "Panera Bread, 406 21st Avenue South",
       "latitude": 36.146625,
       "longitude": -86.799142,
-      "expiryOffsetHours": 30,
+      "pickupBy": "21:00",
       "status": "available"
     },
     {
@@ -1123,7 +1123,7 @@
       "location": "Chipotle, 400 21st Avenue South",
       "latitude": 36.147275,
       "longitude": -86.798854,
-      "expiryOffsetHours": 6,
+      "pickupBy": "22:00",
       "status": "available"
     },
     {
@@ -1140,7 +1140,7 @@
       "location": "Jersey Mike's Subs, 2311 Elliston Place",
       "latitude": 36.149123,
       "longitude": -86.805941,
-      "expiryOffsetHours": 8,
+      "pickupBy": "21:00",
       "status": "available"
     },
     {
@@ -1158,7 +1158,7 @@
       "location": "Oscar's Taco Shop, 2323 Elliston Place",
       "latitude": 36.148932,
       "longitude": -86.806221,
-      "expiryOffsetHours": 10,
+      "pickupBy": "21:00",
       "status": "available"
     },
     {
@@ -1175,7 +1175,7 @@
       "location": "Martin's Bar-B-Que Joint, 2400 Elliston Place",
       "latitude": 36.148693,
       "longitude": -86.807435,
-      "expiryOffsetHours": 12,
+      "pickupBy": "21:00",
       "status": "available"
     },
     {
@@ -1193,7 +1193,7 @@
       "location": "P.F. Chang's, 2525 West End Avenue",
       "latitude": 36.146025,
       "longitude": -86.809325,
-      "expiryOffsetHours": 10,
+      "pickupBy": "21:00",
       "status": "available"
     },
     {
@@ -1211,7 +1211,7 @@
       "location": "Satay, 2412 Elliston Place",
       "latitude": 36.148258,
       "longitude": -86.80808,
-      "expiryOffsetHours": 10,
+      "pickupBy": "21:00",
       "status": "available"
     },
     {
@@ -1228,7 +1228,7 @@
       "location": "Nama, 2300 Elliston Place",
       "latitude": 36.150106,
       "longitude": -86.805746,
-      "expiryOffsetHours": 5,
+      "pickupBy": "21:30",
       "status": "available"
     },
     {
@@ -1246,7 +1246,7 @@
       "location": "Two Boots Nashville, 1925 Broadway",
       "latitude": 36.149355,
       "longitude": -86.79813,
-      "expiryOffsetHours": 10,
+      "pickupBy": "21:00",
       "status": "available"
     },
     {
@@ -1264,7 +1264,7 @@
       "location": "Jason's Deli, 2028 West End Avenue",
       "latitude": 36.150797,
       "longitude": -86.800917,
-      "expiryOffsetHours": 8,
+      "pickupBy": "21:00",
       "status": "available"
     },
     {
@@ -1281,7 +1281,7 @@
       "location": "Elliston Place Soda Shop, 2105 Elliston Place",
       "latitude": 36.151786,
       "longitude": -86.803209,
-      "expiryOffsetHours": 8,
+      "pickupBy": "16:00",
       "status": "available"
     },
     {
@@ -1300,7 +1300,7 @@
       "location": "Taco Mama, 1612 21st Avenue South",
       "latitude": 36.138241,
       "longitude": -86.800496,
-      "expiryOffsetHours": 48,
+      "pickupBy": "21:00",
       "status": "available"
     },
     {
@@ -1319,7 +1319,7 @@
       "location": "Amerigo, 1920 West End Avenue",
       "latitude": 36.151692,
       "longitude": -86.799267,
-      "expiryOffsetHours": 14,
+      "pickupBy": "22:00",
       "status": "available"
     },
     {
@@ -1336,7 +1336,7 @@
       "location": "Hattie B's Hot Chicken, 112 19th Avenue South",
       "latitude": 36.151493,
       "longitude": -86.796624,
-      "expiryOffsetHours": 8,
+      "pickupBy": "22:00",
       "status": "available"
     },
     {
@@ -1354,7 +1354,7 @@
       "location": "Dumpling House, 2117 Belcourt Avenue",
       "latitude": 36.13661,
       "longitude": -86.802373,
-      "expiryOffsetHours": 10,
+      "pickupBy": "21:30",
       "status": "available"
     },
     {
@@ -1371,7 +1371,7 @@
       "location": "Only Chicken, 2127 Belcourt Avenue",
       "latitude": 36.136661,
       "longitude": -86.80323,
-      "expiryOffsetHours": 8,
+      "pickupBy": "21:00",
       "status": "available"
     },
     {
@@ -1389,7 +1389,7 @@
       "location": "Krispy Kreme",
       "latitude": 36.152083,
       "longitude": -86.802643,
-      "expiryOffsetHours": 20,
+      "pickupBy": "22:00",
       "status": "available"
     },
     {
@@ -1407,7 +1407,7 @@
       "location": "Nawabi Hyderabad House - Biryani Place, 106 29th Avenue North",
       "latitude": 36.145214,
       "longitude": -86.813525,
-      "expiryOffsetHours": 12,
+      "pickupBy": "21:30",
       "status": "available"
     },
     {
@@ -1426,7 +1426,7 @@
       "location": "Taziki’s Mediterranean Cafe, 3001 West End Avenue",
       "latitude": 36.143932,
       "longitude": -86.81365,
-      "expiryOffsetHours": 20,
+      "pickupBy": "21:00",
       "status": "available"
     }
   ],

@@ -59,7 +59,7 @@ export function buildCatalog(listings, now = Date.now(), near = null) {
       (listing.tags || []).join(", ") || "no tags",
       `qty ${listing.quantity}`,
       listing.location,
-      `expires in ${hoursUntil(listing.expiry_time, now)}h`,
+      `pick up within ${hoursUntil(listing.expiry_time, now)}h`,
       near && listing.latitude != null && listing.longitude != null
         ? `${distanceMiles(near, { lat: listing.latitude, lng: listing.longitude }).toFixed(1)} mi away`
         : "distance unknown",
@@ -77,7 +77,7 @@ Rules:
 - Only use ids that appear in the catalog. Never invent listings.
 - Dietary needs and allergies are strict: "vegan", "halal", "no nuts", "gluten free", etc. must match the
   listing's tags. If a listing does not have the tag, do not return it.
-- Consider quantity for group sizes, meal time, whether they can cook or refrigerate, expiry, and distance.
+- Consider quantity for group sizes, meal time, whether they can cook or refrigerate, how soon it must be picked up, and distance.
   Respect distance requests: "near me" favors the closest; "within 2 miles" excludes anything farther.
 - Include every listing that fits, up to ${MAX_RESULTS}, best match first: ready-made food that matches the
   need ranks above ingredients that need cooking. Return an empty list if nothing fits.
@@ -99,7 +99,7 @@ Reply with ONLY a JSON object, no markdown:
   "results": [{ "id": "L3", "reason": "short reason it fits, under 15 words" }]
 }
 
-Catalog (id | name | category | tags | quantity | pickup location | expiry | distance | description):
+Catalog (id | name | category | tags | quantity | pickup location | pickup deadline | distance | description):
 ${catalogText}
 
 What they need: ${JSON.stringify(query)}`;

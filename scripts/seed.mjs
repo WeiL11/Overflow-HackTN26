@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { resolveSeedUserIds } from "./seed-users.mjs";
+import { listingExpiry } from "./seed-time.mjs";
 import { generateDevAccounts } from "./generate-dev-accounts.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -103,7 +104,7 @@ const seed = async () => {
     assertResponse(profileResponse, `Upserting profile ${user.email}`);
   }
 
-  const expiryBase = Date.now();
+  const seededAt = new Date();
   const listings = seedData.listings.map((listing) => ({
     id: listing.id,
     donor_id: userIds.get(listing.donorId) || listing.donorId,
@@ -116,7 +117,7 @@ const seed = async () => {
     latitude: listing.latitude ?? null,
     longitude: listing.longitude ?? null,
     notes: listing.notes || null,
-    expiry_time: new Date(expiryBase + listing.expiryOffsetHours * 60 * 60 * 1000).toISOString(),
+    expiry_time: listingExpiry(listing, seededAt).toISOString(),
     status: listing.status,
   }));
   assertResponse(await admin.from("food_listings").upsert(listings, { onConflict: "id" }), "Upserting food listings");
