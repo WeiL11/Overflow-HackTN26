@@ -1,6 +1,18 @@
-# Overflow-Hack
+# Overflow
 
-Food donation and redistribution app built with React, TypeScript, Vite, and Supabase.
+Food donation and redistribution app built with React, TypeScript, Vite, and Supabase, for #HACKTN26 Challenge #1 (Tennessee Food Edition).
+
+## About the project
+
+Nashville could rescue about 9.3 million meals a year, and more than 450,000 people in Middle and West Tennessee faced food insecurity in 2025. The food exists and the need exists; the gap is access. Overflow connects restaurants that have cooked surplus with nearby people and community groups who can use it, with no purchase or other barrier in between.
+
+- **Donors (sponsors)** snap a photo of their surplus. OCI Generative AI fills in the food name, quantity and description, and the donor picks pickup windows before the food expires.
+- **Recipients** browse nearby food on a list or map, ask the AI search for what they need, and reserve a pickup slot. New listings appear in real time.
+- **Looking ahead:** semantic matching against dietary needs with Oracle AI Vector Search, and recipe ideas tailored to rescued ingredients.
+
+Team Overflow: Peter Harlan, Charles Lee, Edward He, David Fang.
+
+Pitch deck: [Overflow on Canva](https://www.canva.com/d/3zrGzAbE0ORzY7n)
 
 ## Prerequisites
 
