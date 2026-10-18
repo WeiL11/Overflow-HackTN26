@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import { getPublicImpactMetrics } from "@/services/metrics";
 import type { ImpactMetrics } from "@/types/metrics";
 import { APP_NAME, APP_TAGLINE } from "@/config/brand";
+import { useAuth } from "@/lib/auth-context";
 
 const stats = [
   { icon: Heart, label: "Total Donors", key: "totalDonors" },
@@ -32,7 +33,18 @@ const steps = [
 ];
 
 const Index = () => {
+  const { user, profile } = useAuth();
   const [metrics, setMetrics] = useState<ImpactMetrics | null>(null);
+  const callsToAction = user
+    ? profile?.role === "donor"
+      ? [{ to: "/donor", label: "Donate Food", Icon: Heart }]
+      : profile?.role === "receiver"
+        ? [{ to: "/receiver", label: "Find Food", Icon: Search }]
+        : []
+    : [
+        { to: "/signup?role=donor", label: "Donate Food", Icon: Heart },
+        { to: "/signup?role=receiver", label: "Find Food", Icon: Search },
+      ];
 
   useEffect(() => {
     let mounted = true;
@@ -80,22 +92,16 @@ const Index = () => {
               className="flex flex-col sm:flex-row gap-4 justify-center"
               style={{ animationDelay: "0.3s", animationFillMode: "both" }}
             >
-              <Link to="/signup?role=donor">
-                <Button
-                  size="3"
-                  className="bg-primary text-white hover:bg-primary/90 font-semibold text-base px-8"
-                >
-                  <Heart className="mr-2 h-5 w-5" /> Donate Food
-                </Button>
-              </Link>
-              <Link to="/signup?role=receiver">
-                <Button
-                  size="3"
-                  className="bg-primary text-white hover:bg-primary/90 font-semibold text-base px-8"
-                >
-                  <Search className="mr-2 h-5 w-5" /> Find Food
-                </Button>
-              </Link>
+              {callsToAction.map(({ to, label, Icon }) => (
+                <Link key={label} to={to}>
+                  <Button
+                    size="3"
+                    className="bg-primary text-white hover:bg-primary/90 font-semibold text-base px-8"
+                  >
+                    <Icon className="mr-2 h-5 w-5" /> {label}
+                  </Button>
+                </Link>
+              ))}
             </div>
           </div>
         </section>

@@ -589,7 +589,7 @@ const DonorDashboard = () => {
   const donorName = profile?.full_name?.split(" ")[0] || "there";
   const pendingRequestListingIds = new Set(
     requests
-      .filter((request) => request.status === "pending")
+      .filter((request) => ["pending", "pending_pickup"].includes(request.status))
       .map((request) => request.listing_id),
   );
   const pendingPickupListingIds = new Set(

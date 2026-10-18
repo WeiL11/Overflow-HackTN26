@@ -45,6 +45,23 @@ describe('getDonorListings filters', () => {
     expect(listingQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });
   });
 
+  it('filters pending listings by requested and pending-pickup states', async () => {
+    const requestQuery = makeChain();
+    requestQuery.in.mockResolvedValue({
+      data: [{ listing_id: 'listing-1' }, { listing_id: 'listing-2' }],
+      error: null,
+    });
+    const listingQuery = makeChain();
+    vi.mocked(supabase.from)
+      .mockReturnValueOnce(requestQuery as never)
+      .mockReturnValueOnce(listingQuery as never);
+
+    await getDonorListings('donor-id', 'pending');
+
+    expect(requestQuery.in).toHaveBeenCalledWith('status', ['pending', 'pending_pickup']);
+    expect(listingQuery.in).toHaveBeenCalledWith('id', ['listing-1', 'listing-2']);
+  });
+
   it('filters available listings server-side by quantity and pending pickup', async () => {
     const completedQuery = makeChain();
     completedQuery.eq.mockResolvedValue({ data: [{ listing_id: 'done-1' }, { listing_id: 'done-1' }], error: null });

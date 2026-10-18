@@ -23,7 +23,7 @@ export const getAllDonorListings = async (donorId: string): Promise<FoodListing[
 
 export const getDonorListings = async (donorId: string, filter: DonorListingFilter = 'pending'): Promise<FoodListing[]> => {
   if (filter === 'pending') {
-    const ids = await getListingIdsForStatuses(['pending']);
+    const ids = await getListingIdsForStatuses(['pending', 'pending_pickup']);
     return ids.length ? getDonorListingsQuery(donorId, query => query.in('id', ids)) : [];
   }
   const completedIds = await getListingIdsForStatuses(['completed']);
