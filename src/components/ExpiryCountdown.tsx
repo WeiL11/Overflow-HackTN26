@@ -40,11 +40,10 @@ const ExpiryCountdown = ({ expiryTime }: ExpiryCountdownProps) => {
     );
   }
 
-  const isUrgent = remaining.minutes < 120; // less than 2 hours
-
+  // Same color and weight as the surrounding listing details (quantity, location).
   return (
-    <span className={`flex items-center gap-1 font-medium ${isUrgent ? 'text-accent-foreground' : 'text-muted-foreground'}`}>
-      <Clock className={`h-3.5 w-3.5 ${isUrgent ? 'text-accent' : ''}`} />
+    <span className="flex items-center gap-1">
+      <Clock className="h-3.5 w-3.5" />
       {remaining.text}
     </span>
   );

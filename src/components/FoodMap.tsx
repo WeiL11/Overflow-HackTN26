@@ -76,7 +76,7 @@ export default function FoodMap({ listings, you, youLabel, onRequest }: FoodMapP
                       <div>
                         <p className="text-sm font-medium">{listing.food_name}</p>
                         <p className="text-xs text-gray-500">{categoryLabel(listing.category)} · {listing.quantity} items</p>
-                        <ExpiryCountdown expiryTime={listing.expiry_time} />
+                        <div className="text-xs text-gray-500"><ExpiryCountdown expiryTime={listing.expiry_time} /></div>
                       </div>
                       {onRequest && <Button size="1" onClick={() => onRequest(listing.id)}>Request</Button>}
                     </li>

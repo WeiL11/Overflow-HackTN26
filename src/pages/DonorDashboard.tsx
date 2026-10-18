@@ -19,7 +19,9 @@ import { Plus, Package, MapPin, Trash2, CheckCircle, XCircle, User, Building2, C
 import { errorMessage } from '@/lib/errors';
 
 // Listings are timed by pickup deadline (closing time or last pickup), not food expiry.
-const MAX_PICKUP_WINDOW_MS = 24 * 60 * 60 * 1000;
+// The form starts one hour from now; donors can pick any future time.
+const DEFAULT_PICKUP_WINDOW_MS = 60 * 60 * 1000;
+const defaultPickupTime = () => toDatetimeLocal(new Date(Date.now() + DEFAULT_PICKUP_WINDOW_MS));
 
 const DonorDashboard = () => {
   const { user, profile, loading: authLoading } = useAuth();
@@ -67,6 +69,12 @@ const DonorDashboard = () => {
   };
 
   const previousLocation = listings[0]?.location;
+
+  // Fill Pick Up By with now + 1 hour each time the form opens (unless a future time is already set).
+  useEffect(() => {
+    if (!showForm) return;
+    setExpiryTime(current => (current && new Date(current).getTime() > Date.now() ? current : defaultPickupTime()));
+  }, [showForm]);
 
   useEffect(() => {
     if (!showForm || location) return;
@@ -172,10 +180,6 @@ const DonorDashboard = () => {
     const pickupBy = new Date(expiryTime).getTime();
     if (!Number.isFinite(pickupBy) || pickupBy <= Date.now()) {
       toast.error('Choose a future pickup time.');
-      return;
-    }
-    if (pickupBy > Date.now() + MAX_PICKUP_WINDOW_MS) {
-      toast.error('Pickup must be within the next 24 hours.');
       return;
     }
     const parsedQuantity = Number.parseInt(quantity, 10);
@@ -557,8 +561,8 @@ const DonorDashboard = () => {
               </div>
               <div className="space-y-2">
                 <Text as="label" size="2" weight="medium" htmlFor="expiry">Pick Up By</Text>
-                <TextField.Root id="expiry" type="datetime-local" value={expiryTime} onChange={e => setExpiryTime(e.target.value)} required min={toDatetimeLocal(new Date())} max={toDatetimeLocal(new Date(Date.now() + MAX_PICKUP_WINDOW_MS))} />
-                <Text as="p" size="1" color="gray">Your closing time or the last time someone can pick up, within the next 24 hours.</Text>
+                <TextField.Root id="expiry" type="datetime-local" value={expiryTime} onChange={e => setExpiryTime(e.target.value)} required min={toDatetimeLocal(new Date())} />
+                <Text as="p" size="1" color="gray">Your closing time or the last time someone can pick up. Starts at one hour from now.</Text>
               </div>
             </div>
             {aiFilled && (
