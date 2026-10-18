@@ -120,6 +120,15 @@ const seed = async () => {
   }));
   assertResponse(await admin.from("food_listings").upsert(listings, { onConflict: "id" }), "Upserting food listings");
 
+  const seededListingIds = seedData.listings.map((listing) => listing.id);
+  const seededRequestIds = seedData.requests.map((request) => request.id);
+  if (seededListingIds.length > 0 && seededRequestIds.length > 0) {
+    assertResponse(
+      await admin.from("food_requests").delete().in("listing_id", seededListingIds).not("id", "in", `(${seededRequestIds.join(",")})`),
+      "Removing non-seed requests from seeded listings",
+    );
+  }
+
   const pickupBase = Math.ceil(Date.now() / (15 * 60 * 1000)) * 15 * 60 * 1000;
   const pickupSlots = seedData.pickupSlots.map((slot) => {
     const startsAt = new Date(pickupBase + slot.startOffsetHours * 60 * 60 * 1000);
