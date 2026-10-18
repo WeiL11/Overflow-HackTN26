@@ -1,4 +1,3 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,11 +11,8 @@ import DonorDashboard from "./pages/DonorDashboard";
 import ReceiverDashboard from "./pages/ReceiverDashboard";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <Theme accentColor="grass" grayColor="sage" radius="large" scaling="100%">
+  <Theme accentColor="grass" grayColor="sage" radius="large" scaling="100%">
       <ToastContainer position="top-right" />
       <BrowserRouter>
         <AuthProvider>
@@ -32,7 +28,6 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </Theme>
-  </QueryClientProvider>
 );
 
 export default App;

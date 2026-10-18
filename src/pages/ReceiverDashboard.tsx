@@ -1,18 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth-context';
 import ListingPhoto from '@/components/ListingPhoto';
-import type { Json } from '@/integrations/supabase/types';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
 import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
+import AppModal, { ModalClose } from '@/components/AppModal';
+import type { FoodListing, RequestByListing } from '@/types/food';
+import { cancelFoodRequest, confirmFoodPickup, getRecipientDashboardData, reserveFood } from '@/services/food';
 import { searchFoodWithAI, type FoodSearchResult } from '@/lib/foodSearch';
 import { DIETARY_TAGS, categoryLabel, tagLabel } from '@/config/foodTaxonomy';
 import { distanceMiles, formatMiles, toLatLng } from '@/lib/geo';
 import { useReceiverLocation } from '@/hooks/use-receiver-location';
 import FoodMap, { type MapListing } from '@/components/FoodMap';
-import { Badge, Button, Card, Dialog, SegmentedControl, Select, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
+import { Badge, Button, Card, SegmentedControl, Select, Tabs, Text, TextArea, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import { Package, MapPin, Search, CheckCircle, Sparkles, Loader2, X, List, Map as MapIcon, Navigation } from 'lucide-react';
 
@@ -22,23 +23,6 @@ const AI_EXAMPLES = [
   'Snacks for my kids',
   'Something I can eat without cooking',
 ];
-
-interface FoodListing {
-  photo_path: string | null;
-  food_analysis: Json | null;
-  id: string;
-  food_name: string;
-  quantity: number;
-  location: string;
-  expiry_time: string;
-  status: string;
-  created_at: string;
-  category: string;
-  tags: string[];
-  description: string | null;
-  latitude: number | null;
-  longitude: number | null;
-}
 
 // Miles from the receiver; null when the listing has no coordinates.
 type ListingWithDistance = FoodListing & { distance: number | null };
@@ -62,17 +46,17 @@ const sortListings = (items: ListingWithDistance[], order: SortOrder) => {
   return [...items].sort((a, b) => direction * (new Date(a[key]).getTime() - new Date(b[key]).getTime()));
 };
 
-interface MyRequest {
-  listing_id: string;
-  status: string;
-}
-
-export default function ReceiverDashboard() {
+const ReceiverDashboard = () => {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [listings, setListings] = useState<FoodListing[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [myRequests, setMyRequests] = useState<RequestByListing>(new Map());
+  const [requesting, setRequesting] = useState<string | null>(null);
+  const [requestFormListingId, setRequestFormListingId] = useState<string | null>(null);
+  const [requestedQuantity, setRequestedQuantity] = useState('1');
+  const [requestNotes, setRequestNotes] = useState('');
   const [searchMode, setSearchMode] = useState<'ai' | 'keyword'>('ai');
   const [aiQuery, setAiQuery] = useState('');
   const [aiSearching, setAiSearching] = useState(false);
@@ -82,43 +66,29 @@ export default function ReceiverDashboard() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const receiverLocation = useReceiverLocation();
   const youLabel = receiverLocation.source === 'default' ? 'Vanderbilt campus' : receiverLocation.source === 'gps' ? 'You are here' : 'You (approx.)';
-  const [myRequests, setMyRequests] = useState<Map<string, string>>(new Map());
-  const [requesting, setRequesting] = useState<string | null>(null);
-  const [requestFormListingId, setRequestFormListingId] = useState<string | null>(null);
-  const [requestedQuantity, setRequestedQuantity] = useState('1');
-  const [requestNotes, setRequestNotes] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
   }, [user, authLoading, navigate]);
 
-  const fetchListings = async () => {
-    const { data } = await supabase
-      .from('food_listings')
-      .select('*')
-      .eq('status', 'available')
-      .gte('expiry_time', new Date().toISOString())
-      .order('expiry_time', { ascending: true });
-    setListings(data || []);
-  };
+  const receiverId = user?.id;
 
-  const fetchMyRequests = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('food_requests')
-      .select('listing_id, status')
-      .eq('receiver_id', user.id);
-    const map = new Map<string, string>();
-    (data || []).forEach((r: MyRequest) => map.set(r.listing_id, r.status));
-    setMyRequests(map);
-  };
+  const fetchDashboardData = useCallback(async () => {
+    if (!receiverId) return;
+    try {
+      const { listings, requests } = await getRecipientDashboardData(receiverId);
+      const map: RequestByListing = new Map();
+      requests.forEach(request => map.set(request.listing_id, request));
+      setListings(listings);
+      setMyRequests(map);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to load dashboard data.');
+    }
+  }, [receiverId]);
 
   useEffect(() => {
-    if (user) {
-      fetchListings();
-      fetchMyRequests();
-    }
-  }, [user]);
+    if (user) fetchDashboardData();
+  }, [fetchDashboardData, user]);
 
   const handleRequest = async (listingId: string) => {
     if (!user) return;
@@ -135,24 +105,42 @@ export default function ReceiverDashboard() {
     }
 
     setRequesting(listingId);
-    const { error } = await supabase.rpc('reserve_food', {
-      p_listing_id: listingId,
-      p_quantity: quantity,
-      p_notes: requestNotes.trim() || undefined,
-    });
-    if (error) {
+    try {
+      await reserveFood({
+        listingId,
+        quantity,
+        notes: requestNotes.trim() || undefined,
+      });
+      toast.success('Food reserved! The donor will review your request.');
+      setRequestFormListingId(null);
+      setRequestedQuantity('1');
+      setRequestNotes('');
+      fetchDashboardData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to reserve food.');
+    } finally {
       setRequesting(null);
-      toast.error(error.message);
-      return;
     }
+  };
 
-    setRequesting(null);
-    toast.success('Food reserved! The donor will review your request.');
-    setMyRequests(prev => new Map(prev).set(listingId, 'pending'));
-    setRequestFormListingId(null);
-    setRequestedQuantity('1');
-    setRequestNotes('');
-    fetchListings();
+  const handleCancelRequest = async (requestId: string) => {
+    try {
+      await cancelFoodRequest(requestId);
+      toast.success('Request cancelled.');
+      fetchDashboardData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to cancel request.');
+    }
+  };
+
+  const handleConfirmPickup = async (requestId: string) => {
+    try {
+      await confirmFoodPickup(requestId);
+      toast.success('Pickup confirmed.');
+      fetchDashboardData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to confirm pickup.');
+    }
   };
 
   const runAiSearch = async (query = aiQuery) => {
@@ -214,6 +202,7 @@ export default function ReceiverDashboard() {
     setRequestNotes('');
     setTimeout(() => document.getElementById(`listing-${listingId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
   };
+
 
   const recipientName = profile?.full_name?.split(' ')[0] || 'there';
 
@@ -294,15 +283,20 @@ export default function ReceiverDashboard() {
         ) : (
           <div className="space-y-4">
             {filtered.map(item => {
-              const requestStatus = myRequests.get(item.id);
-              const hasRequested = !!requestStatus;
-              const timelineStage: ListingStage = requestStatus === 'accepted'
+              const request = myRequests.get(item.id);
+              const requestStatus = request?.status;
+              const hasRequested = !!request && requestStatus !== 'rejected' && requestStatus !== 'cancelled';
+              const timelineStage: ListingStage = requestStatus === 'completed'
                 ? 'completed'
-                : requestStatus === 'pending'
-                  ? 'requested'
-                  : requestStatus === 'rejected'
-                    ? 'rejected'
-                    : 'available';
+                : requestStatus === 'pending_pickup'
+                  ? 'pending_pickup'
+                  : requestStatus === 'pending'
+                    ? 'requested'
+                    : requestStatus === 'rejected'
+                      ? 'rejected'
+                      : requestStatus === 'cancelled'
+                        ? 'cancelled'
+                        : 'available';
               return (
                 <Card key={item.id} id={`listing-${item.id}`} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">
@@ -334,6 +328,7 @@ export default function ReceiverDashboard() {
                           </span>
                           <ExpiryCountdown expiryTime={item.expiry_time} />
                         </div>
+                        {item.notes && <p className="mt-3 text-sm text-muted-foreground">{item.notes}</p>}
                         {showingAi && aiReasons.get(item.id) && (
                           <p className="flex items-center gap-1.5 text-sm text-primary">
                             <Sparkles className="h-3.5 w-3.5 shrink-0" /> {aiReasons.get(item.id)}
@@ -342,14 +337,33 @@ export default function ReceiverDashboard() {
                       </div>
                       <div className="shrink-0">
                         {hasRequested ? (
-                          <Badge
-                            color={requestStatus === 'accepted' ? 'green' : 'gray'}
-                            variant={requestStatus === 'accepted' ? 'solid' : 'soft'}
-                            className="flex items-center gap-1"
-                          >
-                            {requestStatus === 'accepted' && <CheckCircle className="h-3 w-3" />}
-                            {requestStatus === 'pending' ? 'Requested' : requestStatus === 'accepted' ? 'Accepted' : 'Rejected'}
-                          </Badge>
+                          <div className="flex flex-col items-end gap-2">
+                            {requestStatus === 'pending' && (
+                              <>
+                                <Badge color="amber" variant="soft">Requested</Badge>
+                                <Button size="2" variant="outline" disabled={requesting === item.id} onClick={() => handleCancelRequest(request!.id)}>
+                                  Undo Request
+                                </Button>
+                              </>
+                            )}
+                            {requestStatus === 'pending_pickup' && (
+                              <>
+                                {request?.pickup_confirmed_at ? (
+                                  <Badge color="green" variant="soft" className="flex items-center gap-1">
+                                    <CheckCircle className="h-3 w-3" /> Pickup confirmed
+                                  </Badge>
+                                ) : (
+                                  <Button size="2" disabled={requesting === item.id} onClick={() => handleConfirmPickup(request!.id)}>
+                                    Confirm Pickup
+                                  </Button>
+                                )}
+                                <Button size="2" variant="outline" disabled={requesting === item.id} onClick={() => handleCancelRequest(request!.id)}>
+                                  Undo Request
+                                </Button>
+                              </>
+                            )}
+                            {requestStatus === 'completed' && <Badge color="green" variant="solid">Done</Badge>}
+                          </div>
                         ) : (
                           <Button
                             size="2"
@@ -375,6 +389,7 @@ export default function ReceiverDashboard() {
                             min="1"
                             max={item.quantity}
                             step="1"
+                            inputMode="numeric"
                             value={requestedQuantity}
                             onChange={event => setRequestedQuantity(event.target.value)}
                             disabled={requesting === item.id}
@@ -384,6 +399,7 @@ export default function ReceiverDashboard() {
                           <Text as="label" size="2" weight="medium" htmlFor={`request-notes-${item.id}`}>Notes (optional)</Text>
                           <TextArea
                             id={`request-notes-${item.id}`}
+                            className="resize-y"
                             maxLength={1000}
                             placeholder="Add a note for the donor..."
                             value={requestNotes}
@@ -391,12 +407,12 @@ export default function ReceiverDashboard() {
                             disabled={requesting === item.id}
                           />
                         </div>
-                        <div className="mt-4 flex gap-3">
-                          <Button type="button" disabled={requesting === item.id} onClick={() => handleRequest(item.id)}>
-                            {requesting === item.id ? 'Submitting...' : 'Submit Request'}
-                          </Button>
+                        <div className="mt-4 flex justify-end gap-3">
                           <Button type="button" variant="outline" disabled={requesting === item.id} onClick={() => setRequestFormListingId(null)}>
                             Cancel
+                          </Button>
+                          <Button type="button" disabled={requesting === item.id} onClick={() => handleRequest(item.id)}>
+                            {requesting === item.id ? 'Submitting...' : 'Submit'}
                           </Button>
                         </div>
                       </div>
@@ -410,20 +426,20 @@ export default function ReceiverDashboard() {
         )}
         </div>
       </main>
-      <Dialog.Root open={searchOpen} onOpenChange={setSearchOpen}>
-        <Dialog.Trigger>
+      <AppModal
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        title="Search available food"
+        description="Describe what you need and AI will find matching listings, or filter by keyword."
+        trigger={(
           <Button
             size="3"
             className="fixed bottom-6 right-6 z-[100] rounded-full px-5 shadow-xl"
           >
             <Search className="h-5 w-5" /> Search Food
           </Button>
-        </Dialog.Trigger>
-        <Dialog.Content maxWidth="560px">
-          <Dialog.Title className="font-heading">Search available food</Dialog.Title>
-          <Dialog.Description size="2" mb="3">
-            Describe what you need and AI will find matching listings, or filter by keyword.
-          </Dialog.Description>
+        )}
+      >
           <Tabs.Root value={searchMode} onValueChange={value => setSearchMode(value as 'ai' | 'keyword')}>
             <Tabs.List>
               <Tabs.Trigger value="ai"><Sparkles className="mr-1.5 h-4 w-4" /> Ask AI</Tabs.Trigger>
@@ -498,7 +514,7 @@ export default function ReceiverDashboard() {
                     <p className="whitespace-nowrap text-sm text-muted-foreground">
                       {aiMatches.length} {aiMatches.length === 1 ? 'match' : 'matches'} found
                     </p>
-                    <Dialog.Close>
+                    <ModalClose>
                       <Button
                         type="button"
                         disabled={aiMatches.length === 0}
@@ -509,7 +525,7 @@ export default function ReceiverDashboard() {
                       >
                         View Results
                       </Button>
-                    </Dialog.Close>
+                    </ModalClose>
                   </div>
                 </div>
               )}
@@ -534,15 +550,16 @@ export default function ReceiverDashboard() {
                   {searchTerm && (
                     <Button type="button" variant="ghost" onClick={() => setSearchTerm('')}>Clear</Button>
                   )}
-                  <Dialog.Close>
+                  <ModalClose>
                     <Button type="button" onClick={() => setAiApplied(false)}>View Results</Button>
-                  </Dialog.Close>
+                  </ModalClose>
                 </div>
               </div>
             </Tabs.Content>
           </Tabs.Root>
-        </Dialog.Content>
-      </Dialog.Root>
+      </AppModal>
     </div>
   );
-}
+};
+
+export default ReceiverDashboard;

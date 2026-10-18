@@ -4,10 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button, Card, Text, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import Navbar from '@/components/Navbar';
-import { Leaf } from 'lucide-react';
+import { Utensils } from 'lucide-react';
 import { APP_NAME } from '@/config/brand';
 
-export default function Login() {
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,7 +34,7 @@ export default function Login() {
         <Card className="w-full max-w-md card-shadow">
           <div className="p-6 text-center">
             <div className="mx-auto mb-3 inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
-              <Leaf className="h-6 w-6 text-primary" />
+              <Utensils className="h-6 w-6 text-primary" />
             </div>
             <h2 className="font-heading text-2xl">Welcome Back</h2>
             <p className="text-sm text-muted-foreground">Sign in to your {APP_NAME} account</p>
@@ -62,4 +62,6 @@ export default function Login() {
       </main>
     </div>
   );
-}
+};
+
+export default Login;

@@ -6,7 +6,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const seedDataPath = path.join(rootDir, "supabase", "seed-data.json");
 const accountsPath = path.join(rootDir, "dev.md");
 
-export const generateDevAccounts = async (password = process.env.SEED_PASSWORD || "overlfowDev123!") => {
+export const generateDevAccounts = async (password = process.env.SEED_PASSWORD || "overflowDev123!") => {
   const seedData = JSON.parse(await readFile(seedDataPath, "utf8"));
   if (!Array.isArray(seedData.users)) {
     throw new Error("Seed data must contain a users array.");

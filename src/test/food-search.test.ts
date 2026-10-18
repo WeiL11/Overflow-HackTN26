@@ -81,7 +81,9 @@ describe('normalizeSearchResponse', () => {
       idMap,
     );
     expect(result.filters.avoidTags).toEqual(['cold']);
-    expect(result.results.map(r => r.id)).toEqual(['uuid-curry']);
+    // The vegan curry stays (vegan is not avoided); the warm vegetarian pad thai is backfilled;
+    // the cold vegan pretzels are excluded.
+    expect(result.results.map(r => r.id)).toEqual(['uuid-curry', 'uuid-padthai']);
   });
 
   it('handles junk model output', () => {
@@ -148,6 +150,21 @@ describe('distance limits', () => {
   it('falls back to the limit in the query when the model omits it', () => {
     const result = normalizeSearchResponse({ results: [{ id: 'L1' }, { id: 'L2' }] }, placed, idMap, near, 'within 1 mile');
     expect(result.results.map(r => r.id)).toEqual(['uuid-pretzels']);
+  });
+
+  it('backfills the nearest matching listing when the model only picked far-away ones', () => {
+    const halal = [
+      { ...listings[2], latitude: 36.1640, longitude: -86.8420 }, // chicken bowls, halal, ~2.1 mi
+      { ...listings[0], id: 'uuid-beans', tags: ['vegan', 'halal', 'nut_free'], latitude: 36.1530, longitude: -86.7980 }, // ~0.6 mi
+    ];
+    const catalog = buildCatalog(halal, Date.now(), near);
+    const result = normalizeSearchResponse(
+      { mustHaveTags: ['halal', 'nut_free'], maxMiles: 2, results: [{ id: 'L1' }] },
+      halal,
+      catalog.idMap,
+      near,
+    );
+    expect(result.results.map(r => r.id)).toEqual(['uuid-beans']);
   });
 
   it('applies the limit in keyword search too', () => {

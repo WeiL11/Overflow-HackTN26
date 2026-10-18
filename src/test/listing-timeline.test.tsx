@@ -12,17 +12,36 @@ describe('ListingTimeline', () => {
     expect(screen.getByText('Available')).toHaveAttribute('aria-current', 'step');
   });
 
-  it('marks completed as the current stage', () => {
-    render(<ListingTimeline stage="completed" />);
+  it('marks requested as the current stage', () => {
+    render(<ListingTimeline stage="requested" />);
 
-    expect(screen.getByText('Completed')).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByLabelText('Item stage: Requested')).toBeInTheDocument();
+    expect(screen.getByText('Requested')).toHaveAttribute('aria-current', 'step');
   });
 
-  it('shows a declined request as the rejected current stage', () => {
-    render(<ListingTimeline stage="rejected" />);
+  it('marks pending pickup as the current stage', () => {
+    render(<ListingTimeline stage="pending_pickup" />);
+
+    expect(screen.getByLabelText('Item stage: Pending Pickup')).toBeInTheDocument();
+    expect(screen.getByText('Pending Pickup')).toHaveAttribute('aria-current', 'step');
+  });
+
+  it('marks completed as Done', () => {
+    render(<ListingTimeline stage="completed" />);
+
+    expect(screen.getByLabelText('Item stage: Done')).toBeInTheDocument();
+    expect(screen.getByText('Done')).toHaveAttribute('aria-current', 'step');
+  });
+
+  it('shows rejected and cancelled branch states', () => {
+    const { rerender } = render(<ListingTimeline stage="rejected" />);
 
     expect(screen.getByLabelText('Item stage: Request declined')).toBeInTheDocument();
     expect(screen.getByText('Request declined')).toHaveAttribute('aria-current', 'step');
-    expect(screen.getByText('Completed')).not.toHaveAttribute('aria-current');
+    expect(screen.getByText('Done')).not.toHaveAttribute('aria-current');
+
+    rerender(<ListingTimeline stage="cancelled" />);
+    expect(screen.getByLabelText('Item stage: Request cancelled')).toBeInTheDocument();
+    expect(screen.getByText('Request cancelled')).toHaveAttribute('aria-current', 'step');
   });
 });

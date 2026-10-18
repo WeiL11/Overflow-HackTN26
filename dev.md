@@ -4,8 +4,8 @@ These accounts are for local development only.
 
 | Role | Email | Password |
 | --- | --- | --- |
-| donor | donor@overlfow.local | overlfowDev123! |
-| receiver | receiver@overlfow.local | overlfowDev123! |
-| ngo | ngo@overlfow.local | overlfowDev123! |
-| donor | grocer@overlfow.local | overlfowDev123! |
-| donor | kitchen@overlfow.local | overlfowDev123! |
+| donor | donor@overflow.local | overflowDev123! |
+| receiver | receiver@overflow.local | overflowDev123! |
+| ngo | ngo@overflow.local | overflowDev123! |
+| donor | grocer@overflow.local | overflowDev123! |
+| donor | kitchen@overflow.local | overflowDev123! |

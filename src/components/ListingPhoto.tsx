@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 
-export default function ListingPhoto({ path, analysis, name }: { path: string | null; analysis: Json | null; name: string }) {
+const ListingPhoto = ({ path, analysis, name }: { path: string | null; analysis: Json | null; name: string }) => {
   const [url, setUrl] = useState('');
   const [error, setError] = useState(false);
   useEffect(() => {
@@ -24,4 +24,6 @@ export default function ListingPhoto({ path, analysis, name }: { path: string | 
     {error && <p className="text-sm text-muted-foreground">Photo unavailable.</p>}
     {description && <p className="text-sm text-muted-foreground"><span className="font-medium">AI photo description: </span>{description}</p>}
   </div>;
-}
+};
+
+export default ListingPhoto;

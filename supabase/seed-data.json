@@ -2,31 +2,31 @@
   "users": [
     {
       "id": "10000000-0000-4000-8000-000000000001",
-      "email": "donor@overlfow.local",
+      "email": "donor@overflow.local",
       "fullName": "Dev Donor",
       "role": "donor"
     },
     {
       "id": "10000000-0000-4000-8000-000000000002",
-      "email": "receiver@overlfow.local",
+      "email": "receiver@overflow.local",
       "fullName": "Dev Receiver",
       "role": "receiver"
     },
     {
       "id": "10000000-0000-4000-8000-000000000003",
-      "email": "ngo@overlfow.local",
+      "email": "ngo@overflow.local",
       "fullName": "Dev NGO",
       "role": "ngo"
     },
     {
       "id": "10000000-0000-4000-8000-000000000004",
-      "email": "grocer@overlfow.local",
+      "email": "grocer@overflow.local",
       "fullName": "Synthetic Grocery Donor",
       "role": "donor"
     },
     {
       "id": "10000000-0000-4000-8000-000000000005",
-      "email": "kitchen@overlfow.local",
+      "email": "kitchen@overflow.local",
       "fullName": "Synthetic Restaurant Donor",
       "role": "donor"
     }
@@ -147,6 +147,7 @@
       "donorId": "10000000-0000-4000-8000-000000000001",
       "foodName": "Fresh vegetable boxes",
       "quantity": 12,
+      "notes": "A seasonal mix packed in reusable produce boxes.",
       "location": "Community Kitchen",
       "latitude": 36.158,
       "longitude": -86.77,
@@ -453,6 +454,7 @@
       "donorId": "10000000-0000-4000-8000-000000000001",
       "foodName": "Prepared meals",
       "quantity": 15,
+      "notes": "Individually packed and ready for same-day pickup.",
       "location": "Downtown Cafe",
       "latitude": 36.1612,
       "longitude": -86.7775,

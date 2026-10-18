@@ -138,7 +138,8 @@ export function maxMilesFromText(text) {
 
 // Turn raw model JSON into a safe response: known ids only, dietary and avoid tags enforced.
 // Models sometimes skip listings that fit, so listings matching the model's own filters
-// (all its tags, no avoided tags, one of its categories) are appended after its picks.
+// (all its tags, no avoided tags, one of its categories if it named any, within any distance
+// limit) are appended after its picks, nearest first when the receiver's location is known.
 // With `near`, a distance limit from the model (or spelled out in the query) is enforced.
 export function normalizeSearchResponse(raw, listings, idMap, near = null, query = "") {
   const byId = new Map(listings.map((listing) => [listing.id, listing]));
@@ -165,11 +166,13 @@ export function normalizeSearchResponse(raw, listings, idMap, near = null, query
     if (results.length === MAX_RESULTS) break;
   }
 
-  if (results.length < MAX_RESULTS && categories.length > 0 && (requiredDietary.length > 0 || preferredTags.length > 0 || maxMiles != null)) {
+  if (results.length < MAX_RESULTS && (requiredDietary.length > 0 || preferredTags.length > 0 || maxMiles != null)) {
     const extras = listings
-      .filter((listing) => !seen.has(listing.id) && allowed(listing) && categories.includes(listing.category))
+      .filter((listing) => !seen.has(listing.id) && allowed(listing)
+        && (categories.length === 0 || categories.includes(listing.category)))
       .map((listing) => ({ listing, hits: preferredTags.filter((tag) => (listing.tags || []).includes(tag)) }))
-      .filter(({ hits }) => hits.length === preferredTags.length);
+      .filter(({ hits }) => hits.length === preferredTags.length)
+      .sort((a, b) => (milesFrom(near, a.listing) ?? Infinity) - (milesFrom(near, b.listing) ?? Infinity));
     for (const { listing, hits } of extras.slice(0, MAX_RESULTS - results.length)) {
       results.push({ id: listing.id, reason: `Also fits: ${[...requiredDietary, ...hits].map(labelOf).join(", ")}` });
     }

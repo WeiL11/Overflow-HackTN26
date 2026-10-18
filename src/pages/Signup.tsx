@@ -4,10 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button, Card, Text, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import Navbar from '@/components/Navbar';
-import { Leaf, Heart, Search, Building2 } from 'lucide-react';
+import { Utensils, Heart, Search, Building2 } from 'lucide-react';
 import { APP_NAME } from '@/config/brand';
 
-export default function Signup() {
+const Signup = () => {
   const [searchParams] = useSearchParams();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -49,7 +49,7 @@ export default function Signup() {
         <Card className="w-full max-w-md card-shadow">
           <div className="p-6 text-center">
             <div className="mx-auto mb-3 inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
-              <Leaf className="h-6 w-6 text-primary" />
+              <Utensils className="h-6 w-6 text-primary" />
             </div>
             <h2 className="font-heading text-2xl">Join {APP_NAME}</h2>
             <p className="text-sm text-muted-foreground">Create your account and start making a difference</p>
@@ -115,4 +115,6 @@ export default function Signup() {
       </main>
     </div>
   );
-}
+};
+
+export default Signup;

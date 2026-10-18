@@ -28,6 +28,7 @@ export type Database = {
           latitude: number | null
           location: string
           longitude: number | null
+          notes: string | null
           quantity: number
           status: string
           tags: string[]
@@ -45,6 +46,7 @@ export type Database = {
           latitude?: number | null
           location: string
           longitude?: number | null
+          notes?: string | null
           quantity: number
           status?: string
           tags?: string[]
@@ -62,6 +64,7 @@ export type Database = {
           latitude?: number | null
           location?: string
           longitude?: number | null
+          notes?: string | null
           quantity?: number
           status?: string
           tags?: string[]
@@ -74,6 +77,7 @@ export type Database = {
           id: string
           listing_id: string
           notes: string | null
+          pickup_confirmed_at: string | null
           quantity: number
           receiver_id: string
           status: string
@@ -83,6 +87,7 @@ export type Database = {
           id?: string
           listing_id: string
           notes?: string | null
+          pickup_confirmed_at?: string | null
           quantity?: number
           receiver_id: string
           status?: string
@@ -92,6 +97,7 @@ export type Database = {
           id?: string
           listing_id?: string
           notes?: string | null
+          pickup_confirmed_at?: string | null
           quantity?: number
           receiver_id?: string
           status?: string
@@ -139,9 +145,29 @@ export type Database = {
         Args: { p_listing_id: string; p_notes?: string; p_quantity: number }
         Returns: Database["public"]["Tables"]["food_requests"]["Row"]
       }
-      respond_to_food_request: {
-        Args: { p_request_id: string; p_status: string }
+      advance_food_request: {
+        Args: { p_direction: string; p_request_id: string }
         Returns: Database["public"]["Tables"]["food_requests"]["Row"]
+      }
+      cancel_food_request: {
+        Args: { p_request_id: string }
+        Returns: Database["public"]["Tables"]["food_requests"]["Row"]
+      }
+      confirm_food_pickup: {
+        Args: { p_request_id: string }
+        Returns: Database["public"]["Tables"]["food_requests"]["Row"]
+      }
+      reject_food_request: {
+        Args: { p_request_id: string }
+        Returns: Database["public"]["Tables"]["food_requests"]["Row"]
+      }
+      get_public_impact_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_donors: number
+          total_meals_saved: number
+          total_recipients: number
+        }[]
       }
     }
     Enums: {

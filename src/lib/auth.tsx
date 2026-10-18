@@ -1,30 +1,12 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { AuthContext, type AuthContextType } from '@/lib/auth-context';
 
-interface AuthContextType {
-  session: Session | null;
-  user: User | null;
-  profile: { full_name: string; role: string } | null;
-  loading: boolean;
-  updateProfileName: (fullName: string) => Promise<void>;
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType>({
-  session: null,
-  user: null,
-  profile: null,
-  loading: true,
-  updateProfileName: async () => {},
-  signOut: async () => {},
-});
-
-export const useAuth = () => useContext(AuthContext);
-
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string; role: string } | null>(null);
+  const [profile, setProfile] = useState<AuthContextType['profile']>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -83,4 +65,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
+};
