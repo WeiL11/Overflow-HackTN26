@@ -225,10 +225,11 @@ const Index = () => {
   };
 
   const dashboard = profile?.role === "donor" ? "/donor" : "/receiver";
-  // Signed-in people only see the action for their role; visitors see both.
-  const donate = { to: user ? "/donor" : "/signup?role=donor", label: "Donate food" };
-  const find = { to: user ? "/receiver" : "/signup?role=receiver", label: "Find food" };
-  const actions = !user ? [donate, find] : profile?.role === "donor" ? [donate] : profile?.role === "receiver" ? [find] : [];
+  // Both actions always show; signed-in people go straight to that dashboard, visitors to sign-up.
+  const actions = [
+    { to: user ? "/donor" : "/signup?role=donor", label: "Donate food" },
+    { to: user ? "/receiver" : "/signup?role=receiver", label: "Find food" },
+  ];
   const renderActions = (primary: string, secondary: string) =>
     actions.map((a, i) => (
       <Link key={a.to} to={a.to} className={`tb-btn ${i === 0 ? primary : secondary}`} {...magnetic}>{a.label} <ArrowRight aria-hidden="true" /></Link>
