@@ -57,7 +57,7 @@ const ListingPhoto = ({
       )}
       {description && (
         <p className="line-clamp-3 text-xs text-muted-foreground">
-          <span className="font-medium">AI photo description: </span>
+          <span className="font-medium">Description: </span>
           {description}
         </p>
       )}
