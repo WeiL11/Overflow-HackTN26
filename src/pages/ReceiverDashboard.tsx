@@ -4,7 +4,8 @@ import { useAuth } from '@/lib/auth-context';
 import ListingPhoto from '@/components/ListingPhoto';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
-import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
+import ListingTimeline from '@/components/ListingTimeline';
+import { requestStage } from '@/lib/listingStage';
 import AppModal, { ModalClose } from '@/components/AppModal';
 import type { FoodListing, RequestByListing } from '@/types/food';
 import { cancelFoodRequest, confirmFoodPickup, getRecipientDashboardData, reserveFood } from '@/services/food';
@@ -65,7 +66,7 @@ const ReceiverDashboard = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('expiry');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const receiverLocation = useReceiverLocation();
-  const youLabel = receiverLocation.source === 'default' ? 'Vanderbilt campus' : receiverLocation.source === 'gps' ? 'You are here' : 'You (approx.)';
+  const youLabel = receiverLocation.source === 'gps' ? 'You are here' : 'You (Featheringill Hall)';
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
@@ -286,17 +287,7 @@ const ReceiverDashboard = () => {
               const request = myRequests.get(item.id);
               const requestStatus = request?.status;
               const hasRequested = !!request && requestStatus !== 'rejected' && requestStatus !== 'cancelled';
-              const timelineStage: ListingStage = requestStatus === 'completed'
-                ? 'completed'
-                : requestStatus === 'pending_pickup'
-                  ? 'pending_pickup'
-                  : requestStatus === 'pending'
-                    ? 'requested'
-                    : requestStatus === 'rejected'
-                      ? 'rejected'
-                      : requestStatus === 'cancelled'
-                        ? 'cancelled'
-                        : 'available';
+              const timelineStage = requestStage(requestStatus);
               return (
                 <Card key={item.id} id={`listing-${item.id}`} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">

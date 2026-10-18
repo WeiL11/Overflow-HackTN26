@@ -133,6 +133,21 @@ export const getRecipientDashboardData = async (receiverId: string): Promise<{ l
   return { listings, requests };
 };
 
+export type MyFoodRequest = Pick<FoodRequest, 'id' | 'listing_id' | 'status' | 'quantity' | 'notes' | 'created_at' | 'pickup_confirmed_at'> & {
+  listing: Pick<FoodListing, 'food_name' | 'location' | 'expiry_time' | 'photo_path' | 'food_analysis'> | null;
+};
+
+// Everything the receiver has requested, newest first, with the listing it was for.
+export const getMyFoodRequests = async (receiverId: string): Promise<MyFoodRequest[]> => {
+  const { data, error } = await supabase
+    .from('food_requests')
+    .select('id, listing_id, status, quantity, notes, created_at, pickup_confirmed_at, listing:food_listings(food_name, location, expiry_time, photo_path, food_analysis)')
+    .eq('receiver_id', receiverId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data as MyFoodRequest[];
+};
+
 export const reserveFood = async ({ listingId, quantity, notes }: ReserveFoodInput): Promise<void> => {
   const { error } = await supabase.rpc('reserve_food', {
     p_listing_id: listingId,

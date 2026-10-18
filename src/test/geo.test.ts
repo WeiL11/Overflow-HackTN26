@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { distanceMiles, formatMiles, toLatLng, VANDERBILT } from '@/lib/geo';
+import { distanceMiles, formatMiles, toLatLng, FEATHERINGILL } from '@/lib/geo';
 import { buildCatalog, distanceMiles as serverDistanceMiles } from '../../server/searchFood.mjs';
 
 const DOWNTOWN_LIBRARY = { lat: 36.1625, lng: -86.7816 };
 
 describe('distanceMiles', () => {
-  it('measures Vanderbilt to the downtown library at about 1.7 miles', () => {
-    expect(distanceMiles(VANDERBILT, DOWNTOWN_LIBRARY)).toBeCloseTo(1.7, 1);
+  it('measures Featheringill Hall to the downtown library at about 1.7 miles', () => {
+    expect(distanceMiles(FEATHERINGILL, DOWNTOWN_LIBRARY)).toBeCloseTo(1.7, 1);
   });
 
   it('is zero for the same point and symmetric', () => {
-    expect(distanceMiles(VANDERBILT, VANDERBILT)).toBe(0);
-    expect(distanceMiles(DOWNTOWN_LIBRARY, VANDERBILT)).toBeCloseTo(distanceMiles(VANDERBILT, DOWNTOWN_LIBRARY), 10);
+    expect(distanceMiles(FEATHERINGILL, FEATHERINGILL)).toBe(0);
+    expect(distanceMiles(DOWNTOWN_LIBRARY, FEATHERINGILL)).toBeCloseTo(distanceMiles(FEATHERINGILL, DOWNTOWN_LIBRARY), 10);
   });
 
   it('matches the server implementation', () => {
-    expect(serverDistanceMiles(VANDERBILT, DOWNTOWN_LIBRARY)).toBeCloseTo(distanceMiles(VANDERBILT, DOWNTOWN_LIBRARY), 10);
+    expect(serverDistanceMiles(FEATHERINGILL, DOWNTOWN_LIBRARY)).toBeCloseTo(distanceMiles(FEATHERINGILL, DOWNTOWN_LIBRARY), 10);
   });
 });
 
@@ -39,7 +39,7 @@ describe('buildCatalog distance', () => {
   });
 
   it('adds miles from the receiver, or "distance unknown"', () => {
-    const { text } = buildCatalog([listing('near', 36.1625, -86.7816), listing('nowhere', null, null)], Date.now(), VANDERBILT);
+    const { text } = buildCatalog([listing('near', 36.1625, -86.7816), listing('nowhere', null, null)], Date.now(), FEATHERINGILL);
     const [first, second] = text.split('\n');
     expect(first).toContain('1.7 mi away');
     expect(second).toContain('distance unknown');

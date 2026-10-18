@@ -7,7 +7,8 @@ import type { Json } from '@/integrations/supabase/types';
 import { analyzeFoodPhoto, detectCurrentAddress, resizeImage, toDatetimeLocal } from '@/lib/foodPhoto';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
-import ListingTimeline, { type ListingStage } from '@/components/ListingTimeline';
+import ListingTimeline from '@/components/ListingTimeline';
+import { donationStage } from '@/lib/listingStage';
 import AppModal, { ModalClose } from '@/components/AppModal';
 import type { FoodListing, FoodRequest, ProfileSummary } from '@/types/food';
 import { advanceFoodRequest, createFoodListing, deleteFoodListing, getDonorListings, getProfilesByUserIds, getRequestsForListings, rejectFoodRequest } from '@/services/food';
@@ -331,13 +332,7 @@ const DonorDashboard = () => {
             {listings.map(item => {
               const itemRequests = getRequestsForListing(item.id);
               const pendingRequests = itemRequests.filter(r => r.status === 'pending');
-              const timelineStage: ListingStage = itemRequests.some(request => request.status === 'completed')
-                ? 'completed'
-                : itemRequests.some(request => request.status === 'pending_pickup')
-                  ? 'pending_pickup'
-                  : pendingRequests.length > 0 || item.status === 'requested'
-                    ? 'requested'
-                    : 'available';
+              const timelineStage = donationStage(item.status, itemRequests.map(request => request.status));
               return (
                 <Card key={item.id} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">
