@@ -39,10 +39,23 @@ it('rejects oversized and unsupported photos before decoding', async () => {
 });
 
 it('reports backend configuration errors rather than pretending analysis succeeded', async () => {
-  getSession.mockResolvedValue({ data: { session: null } });
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: async () => new Blob(['image']) }));
+  getSession.mockResolvedValue({ data: { session: { access_token: 'test' } } });
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ blob: async () => new Blob(['image']) }));
   invoke.mockResolvedValue({ error: { context: new Response(JSON.stringify({ error: 'Food analysis is not configured.' }), { status: 503 }) } });
   await expect(analyzeFoodPhoto('data:image/jpeg;base64,test')).rejects.toThrow('not configured');
+});
+
+it('shows errors the AI server answered with instead of trying the fallback', async () => {
+  getSession.mockResolvedValue({ data: { session: { access_token: 'test' } } });
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 413, json: async () => ({ error: 'Image is too large (max 5 MB).' }) }));
+  await expect(analyzeFoodPhoto('data:image/jpeg;base64,test')).rejects.toThrow('too large');
+  expect(invoke).not.toHaveBeenCalled();
+});
+
+it('asks to sign in without calling any service when there is no session', async () => {
+  getSession.mockResolvedValue({ data: { session: null } });
+  await expect(analyzeFoodPhoto('data:image/jpeg;base64,test')).rejects.toThrow('Sign in');
+  expect(invoke).not.toHaveBeenCalled();
 });
 
 it('captures original metadata before resizing and records the stored JPEG separately', async () => {

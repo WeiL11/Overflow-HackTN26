@@ -18,11 +18,8 @@ const FoodPhotoUpload = ({ disabled, onPhotoChange, onSuggestion, onBusyChange }
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const runAnalysis = async (image: string) => {
-    if (busy || disabled) return;
-    setBusy(true);
-    onBusyChange(true);
-    setError('');
+  // Ask the AI for suggestions; the caller has already marked the component busy.
+  const analyze = async (image: string) => {
     setAnalysis(null);
     onSuggestion(null);
     try {
@@ -32,6 +29,16 @@ const FoodPhotoUpload = ({ disabled, onPhotoChange, onSuggestion, onBusyChange }
       if (!suggestion.isFood) setError('No recognizable food detected. Try a clearer photo or enter details manually.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Photo analysis failed.');
+    }
+  };
+
+  const runAnalysis = async (image: string) => {
+    if (busy || disabled) return;
+    setBusy(true);
+    onBusyChange(true);
+    setError('');
+    try {
+      await analyze(image);
     } finally {
       setBusy(false);
       onBusyChange(false);
@@ -50,6 +57,8 @@ const FoodPhotoUpload = ({ disabled, onPhotoChange, onSuggestion, onBusyChange }
       setPreview(image);
       const blob = await (await fetch(image)).blob();
       onPhotoChange(new File([blob], 'food.jpg', { type: 'image/jpeg' }));
+      // Analyze right away so picking a photo is enough; the ✨ button re-runs it.
+      await analyze(image);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not read this photo.');
     } finally {

@@ -31,12 +31,16 @@ export const resizeImage = async (file: File): Promise<string> => {
   return canvas.toDataURL('image/jpeg', 0.85);
 };
 
+// Errors the AI server answered with (bad photo, not signed in, ...): show them as-is
+// instead of retrying through the Supabase function.
+class AnalyzeFoodError extends Error {}
+
 export const analyzeFoodPhoto = async (image: string): Promise<FoodPhotoSuggestion> => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Sign in to analyze a photo.');
+    if (!session) throw new AnalyzeFoodError('Sign in to analyze a photo.');
     const response = await fetch('/api/analyze-food', {
-      signal: AbortSignal.timeout(45000),
+      signal: AbortSignal.timeout(20000),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,6 +49,7 @@ export const analyzeFoodPhoto = async (image: string): Promise<FoodPhotoSuggesti
       body: JSON.stringify({ image }),
     });
     const body = await response.json().catch(() => ({}));
+    if (!response.ok && response.status < 500) throw new AnalyzeFoodError(body.error || 'Photo analysis failed.');
     if (!response.ok) throw new Error(body.error || 'Photo analysis failed.');
     if (typeof body.isFood !== 'boolean' || typeof body.foodName !== 'string' || typeof body.description !== 'string') throw new Error('Invalid photo analysis response.');
     return {
@@ -60,12 +65,13 @@ export const analyzeFoodPhoto = async (image: string): Promise<FoodPhotoSuggesti
       quantity: Number.isInteger(body.quantity) && body.quantity > 0 ? body.quantity : null,
       shelfLifeHours: null,
     } as FoodPhotoSuggestion;
-  } catch {
-    // Keep the existing autofill service, with the Supabase vision function as fallback.
+  } catch (caught) {
+    if (caught instanceof AnalyzeFoodError) throw caught;
+    // AI server unreachable or timed out: try the Supabase vision function as a fallback.
     const photo = await (await fetch(image)).blob();
     const body = new FormData();
     body.append('photo', new File([photo], 'food.jpg', { type: 'image/jpeg' }));
-    const { data, error } = await supabase.functions.invoke('analyze-food', { body });
+    const { data, error } = await supabase.functions.invoke('analyze-food', { body, signal: AbortSignal.timeout(20000) });
     if (error) {
       const detail = error.context instanceof Response ? await error.context.json().catch(() => null) : null;
       throw new Error(detail?.error || 'Photo analysis is unavailable. Check that your AI backend is running, then retry or enter details manually.');

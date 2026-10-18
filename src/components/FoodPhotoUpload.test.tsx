@@ -50,7 +50,7 @@ describe('FoodPhotoUpload', () => {
     expect(analyzeFoodPhoto).not.toHaveBeenCalled();
   });
 
-  it('passes the resized photo and suggestion callbacks on success', async () => {
+  it('analyzes the photo as soon as it is chosen and passes the suggestion on', async () => {
     resizeImage.mockResolvedValueOnce('data:image/jpeg;base64,photo');
     analyzeFoodPhoto.mockResolvedValueOnce(suggestion);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: async () => new Blob(['photo'], { type: 'image/jpeg' }) }));
@@ -59,11 +59,21 @@ describe('FoodPhotoUpload', () => {
     fireEvent.change(screen.getByLabelText('Food photo'), { target: { files: [new File(['photo'], 'food.jpg', { type: 'image/jpeg' })] } });
 
     await waitFor(() => expect(callbacks.onPhotoChange).toHaveBeenCalledWith(expect.any(File)));
-    expect(analyzeFoodPhoto).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Analyze food photo' }));
     await waitFor(() => expect(callbacks.onSuggestion).toHaveBeenCalledWith(suggestion));
     expect(analyzeFoodPhoto).toHaveBeenCalledWith('data:image/jpeg;base64,photo');
     expect(callbacks.onBusyChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('re-runs the analysis from the Analyze again button', async () => {
+    resizeImage.mockResolvedValueOnce('data:image/jpeg;base64,photo');
+    analyzeFoodPhoto.mockResolvedValue(suggestion);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: async () => new Blob(['photo'], { type: 'image/jpeg' }) }));
+    renderUpload();
+
+    fireEvent.change(screen.getByLabelText('Food photo'), { target: { files: [new File(['photo'], 'food.jpg', { type: 'image/jpeg' })] } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Analyze again' })).not.toBeDisabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Analyze again' }));
+    await waitFor(() => expect(analyzeFoodPhoto).toHaveBeenCalledTimes(2));
   });
 
   it('keeps manual entry available and shows errors when analysis fails', async () => {
@@ -75,9 +85,8 @@ describe('FoodPhotoUpload', () => {
     fireEvent.change(screen.getByLabelText('Food photo'), { target: { files: [new File(['photo'], 'food.jpg', { type: 'image/jpeg' })] } });
 
     await waitFor(() => expect(callbacks.onPhotoChange).toHaveBeenCalledWith(expect.any(File)));
-    expect(analyzeFoodPhoto).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Analyze food photo' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Analysis unavailable.'));
+    expect(screen.getByRole('button', { name: 'Analyze food photo' })).not.toBeDisabled();
     expect(callbacks.onSuggestion).toHaveBeenCalledWith(null);
   });
 });
