@@ -101,7 +101,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 168,
+      "expiryOffsetHours": 41,
       "status": "available"
     },
     {
@@ -123,7 +123,7 @@
       "location": "The Nations Community Center",
       "latitude": 36.164,
       "longitude": -86.842,
-      "expiryOffsetHours": 240,
+      "expiryOffsetHours": 44,
       "status": "available"
     },
     {
@@ -145,7 +145,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 96,
+      "expiryOffsetHours": 36,
       "status": "available"
     },
     {
@@ -271,7 +271,7 @@
       "location": "12 South Neighborhood Bakery",
       "latitude": 36.126,
       "longitude": -86.79,
-      "expiryOffsetHours": 96,
+      "expiryOffsetHours": 37,
       "status": "available"
     },
     {
@@ -530,7 +530,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 336,
+      "expiryOffsetHours": 47,
       "status": "available"
     },
     {
@@ -550,7 +550,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 168,
+      "expiryOffsetHours": 43,
       "status": "available"
     },
     {
@@ -569,7 +569,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 120,
+      "expiryOffsetHours": 39,
       "status": "available"
     },
     {
@@ -589,7 +589,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 240,
+      "expiryOffsetHours": 45,
       "status": "available"
     },
     {
@@ -630,7 +630,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 720,
+      "expiryOffsetHours": 48,
       "status": "available"
     },
     {
@@ -674,7 +674,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 2160,
+      "expiryOffsetHours": 49,
       "status": "available"
     },
     {
@@ -698,7 +698,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 4320,
+      "expiryOffsetHours": 63,
       "status": "available"
     },
     {
@@ -719,7 +719,7 @@
       "location": "East Nashville Community Fridge",
       "latitude": 36.1771,
       "longitude": -86.7516,
-      "expiryOffsetHours": 2160,
+      "expiryOffsetHours": 51,
       "status": "available"
     },
     {
@@ -740,7 +740,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 4320,
+      "expiryOffsetHours": 64,
       "status": "available"
     },
     {
@@ -761,7 +761,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 4320,
+      "expiryOffsetHours": 65,
       "status": "available"
     },
     {
@@ -780,7 +780,7 @@
       "location": "Downtown Public Library",
       "latitude": 36.1625,
       "longitude": -86.7816,
-      "expiryOffsetHours": 4320,
+      "expiryOffsetHours": 67,
       "status": "available"
     },
     {
@@ -804,7 +804,7 @@
       "location": "The Nations Community Center",
       "latitude": 36.164,
       "longitude": -86.842,
-      "expiryOffsetHours": 4320,
+      "expiryOffsetHours": 68,
       "status": "available"
     },
     {
@@ -823,7 +823,7 @@
       "location": "Downtown Public Library",
       "latitude": 36.1625,
       "longitude": -86.7816,
-      "expiryOffsetHours": 2160,
+      "expiryOffsetHours": 52,
       "status": "available"
     },
     {
@@ -844,7 +844,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 2160,
+      "expiryOffsetHours": 53,
       "status": "available"
     },
     {
@@ -865,7 +865,7 @@
       "location": "East Nashville Community Fridge",
       "latitude": 36.1771,
       "longitude": -86.7516,
-      "expiryOffsetHours": 2160,
+      "expiryOffsetHours": 55,
       "status": "available"
     },
     {
@@ -887,7 +887,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 2160,
+      "expiryOffsetHours": 56,
       "status": "available"
     },
     {
@@ -908,7 +908,7 @@
       "location": "Downtown Public Library",
       "latitude": 36.1625,
       "longitude": -86.7816,
-      "expiryOffsetHours": 8760,
+      "expiryOffsetHours": 72,
       "status": "available"
     },
     {
@@ -929,7 +929,7 @@
       "location": "Midtown Food Pantry",
       "latitude": 36.153,
       "longitude": -86.798,
-      "expiryOffsetHours": 120,
+      "expiryOffsetHours": 40,
       "status": "available"
     },
     {
@@ -949,7 +949,7 @@
       "location": "Vanderbilt Campus Pantry",
       "latitude": 36.1447,
       "longitude": -86.8027,
-      "expiryOffsetHours": 2160,
+      "expiryOffsetHours": 57,
       "status": "available"
     },
     {
@@ -968,7 +968,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 4320,
+      "expiryOffsetHours": 69,
       "status": "available"
     },
     {
@@ -990,7 +990,7 @@
       "location": "East Nashville Community Fridge",
       "latitude": 36.1771,
       "longitude": -86.7516,
-      "expiryOffsetHours": 4320,
+      "expiryOffsetHours": 71,
       "status": "available"
     },
     {
@@ -1030,7 +1030,7 @@
       "location": "The Nations Community Center",
       "latitude": 36.164,
       "longitude": -86.842,
-      "expiryOffsetHours": 2160,
+      "expiryOffsetHours": 59,
       "status": "available"
     },
     {
@@ -1049,7 +1049,7 @@
       "location": "Antioch Community Center",
       "latitude": 36.06,
       "longitude": -86.672,
-      "expiryOffsetHours": 2160,
+      "expiryOffsetHours": 60,
       "status": "available"
     },
     {
@@ -1070,7 +1070,7 @@
       "location": "East Nashville Community Fridge",
       "latitude": 36.1771,
       "longitude": -86.7516,
-      "expiryOffsetHours": 2160,
+      "expiryOffsetHours": 61,
       "status": "available"
     },
     {
