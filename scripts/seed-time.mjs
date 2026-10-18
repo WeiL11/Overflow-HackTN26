@@ -42,3 +42,22 @@ export function listingExpiry(listing, now = new Date()) {
   const hours = Math.min(Number(listing.expiryOffsetHours) || 24, 24);
   return new Date(now.getTime() + hours * 60 * 60 * 1000);
 }
+
+const SLOT_MS = 15 * 60 * 1000;
+
+// Up to `max` back-to-back 15-minute pickup slots from the next quarter hour that end by
+// the pickup deadline. Each slot holds one request, so a listing needs several to be shared.
+export function pickupSlotsUntil(listingId, expiry, capacity, now = new Date(), max = 8) {
+  const slots = [];
+  let start = Math.ceil(now.getTime() / SLOT_MS) * SLOT_MS;
+  while (slots.length < max && start + SLOT_MS <= expiry.getTime()) {
+    slots.push({
+      listing_id: listingId,
+      capacity,
+      starts_at: new Date(start).toISOString(),
+      ends_at: new Date(start + SLOT_MS).toISOString(),
+    });
+    start += SLOT_MS;
+  }
+  return slots;
+}
