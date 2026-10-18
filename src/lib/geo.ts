@@ -6,6 +6,8 @@ export interface LatLng {
 // Demo default when the browser won't share a location (e.g. the HTTP live site):
 // Featheringill Hall, Vanderbilt School of Engineering (OpenStreetMap).
 export const FEATHERINGILL: LatLng & { label: string } = { lat: 36.144892, lng: -86.803358, label: 'Featheringill Hall' };
+// Default pickup address on the donor form (same building as FEATHERINGILL).
+export const FEATHERINGILL_ADDRESS = 'Featheringill Hall, 2301 Vanderbilt Place, Nashville, TN';
 
 const EARTH_RADIUS_MILES = 3958.8;
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;

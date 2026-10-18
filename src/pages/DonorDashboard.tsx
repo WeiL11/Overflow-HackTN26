@@ -4,7 +4,12 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import FoodPhotoUpload from "@/components/FoodPhotoUpload";
 import type { Json } from "@/integrations/supabase/types";
-import { detectCurrentAddress, toDatetimeLocal } from "@/lib/foodPhoto";
+import { toDatetimeLocal } from "@/lib/foodPhoto";
+import { FEATHERINGILL, FEATHERINGILL_ADDRESS, geocodeAddress } from "@/lib/geo";
+
+// The Add Food form starts with Featheringill Hall and a deadline two hours from now.
+const DEFAULT_EXPIRY_MS = 2 * 60 * 60 * 1000;
+const defaultExpiryTime = () => toDatetimeLocal(new Date(Date.now() + DEFAULT_EXPIRY_MS));
 import {
   canonicalPickupTimestamp,
   expandAvailabilityBlocks,
@@ -143,26 +148,18 @@ const DonorDashboard = () => {
     setLocationSource(null);
   };
 
-  const previousLocation = listings[0]?.location;
+  // Prefill Pickup Location and Food expiration when the Add Food form opens.
+  const fillDefaults = () => {
+    setLocation((current) => current || FEATHERINGILL_ADDRESS);
+    setExpiryTime((current) =>
+      current && new Date(current).getTime() > Date.now() ? current : defaultExpiryTime(),
+    );
+  };
 
   useEffect(() => {
-    if (!showForm || location) return;
-    let cancelled = false;
-    (async () => {
-      const address = await detectCurrentAddress();
-      if (cancelled) return;
-      if (address) {
-        setLocation((current) => current || address);
-        setLocationSource("gps");
-      } else if (previousLocation) {
-        setLocation((current) => current || previousLocation);
-        setLocationSource("previous");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [showForm, location, previousLocation]);
+    if (showForm && addStep === 1 && !editingListing) fillDefaults();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showForm]);
 
   const donorId = user?.id;
 
@@ -337,6 +334,10 @@ const DonorDashboard = () => {
           quantity: parsedQuantity,
           location,
           expiryTime,
+          coordinates:
+            location.trim() === FEATHERINGILL_ADDRESS
+              ? { lat: FEATHERINGILL.lat, lng: FEATHERINGILL.lng }
+              : await geocodeAddress(location),
           notes: listingNotes.trim() || null,
           pickupBlocks,
           foodAnalysis: analysis,
@@ -692,7 +693,7 @@ const DonorDashboard = () => {
           )}
         </div>
       </main>
-      <DonorAddListingModal open={showForm} onOpenChange={open => { if (!open && (submitting || analyzing)) return; setShowForm(open); if (!open) resetForm(); }} step={addStep} onStepChange={setAddStep} draft={{ foodName, quantity, location, expiryTime, pickupBlocks, notes: listingNotes }} onDraftChange={draft => { setFoodName(draft.foodName); setQuantity(draft.quantity); setLocation(draft.location); setExpiryTime(draft.expiryTime); setPickupBlocks(draft.pickupBlocks); setListingNotes(draft.notes); }} formRef={addFormRef} locationInputRef={locationInputRef} onSubmit={handleSubmit} onNext={goToSchedule} submitting={submitting} analyzing={analyzing} sourcePhotoPath={sourcePhotoPath} locationSource={locationSource} onConfirmLocation={() => setLocationSource(null)} onPhotoChange={value => { setPhoto(value); setSourcePhotoPath(null); }} onBusyChange={setAnalyzing} onSuggestion={suggestion => { setAnalysis(suggestion ? { ...suggestion } : null); setAiFilled(Boolean(suggestion?.isFood)); if (suggestion?.isFood) { setFoodName(suggestion.foodName); if (suggestion.quantity !== null) setQuantity(String(suggestion.quantity)); } }} />
+      <DonorAddListingModal open={showForm} onOpenChange={open => { if (!open && (submitting || analyzing)) return; setShowForm(open); if (!open) resetForm(); }} step={addStep} onStepChange={setAddStep} draft={{ foodName, quantity, location, expiryTime, pickupBlocks, notes: listingNotes }} onDraftChange={draft => { setFoodName(draft.foodName); setQuantity(draft.quantity); setLocation(draft.location); setExpiryTime(draft.expiryTime); setPickupBlocks(draft.pickupBlocks); setListingNotes(draft.notes); }} formRef={addFormRef} locationInputRef={locationInputRef} onSubmit={handleSubmit} onNext={goToSchedule} submitting={submitting} analyzing={analyzing} sourcePhotoPath={sourcePhotoPath} locationSource={locationSource} onConfirmLocation={() => setLocationSource(null)} onPhotoChange={value => { setPhoto(value); setSourcePhotoPath(null); }} onBusyChange={setAnalyzing} onSuggestion={suggestion => { setAnalysis(suggestion ? { ...suggestion } : null); setAiFilled(Boolean(suggestion?.isFood)); if (suggestion?.isFood) { setFoodName(suggestion.foodName); if (suggestion.quantity !== null) setQuantity(String(suggestion.quantity)); fillDefaults(); } }} />
       <DonorManageScheduleModal open={Boolean(managedListingId)} blocks={managedBlocks} onBlocksChange={setManagedBlocks} lockedStarts={lockedStarts} maxDateTime={managedListing?.expiry_time} saving={savingSchedule} onClose={() => setManagedListingId(null)} onSave={saveSchedule} />
       <DonorEditListingModal listing={editingListing} allocatedQuantity={editAllocatedQuantity} saving={savingListing} onChange={setEditingListing} onClose={() => setEditingListing(null)} onSubmit={saveEditedListing} />
       {selectedAction && (

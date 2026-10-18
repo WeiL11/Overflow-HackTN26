@@ -76,7 +76,7 @@ export const createFoodListing = async (input: CreateFoodListingInput, photo?: F
   }
 
   try {
-    const { error } = await supabase.rpc('create_food_listing_with_slots', {
+    const { data: created, error } = await supabase.rpc('create_food_listing_with_slots', {
       p_food_name: input.food_name,
       p_quantity: input.quantity,
       p_expiry_time: new Date(input.expiryTime).toISOString(),
@@ -87,6 +87,12 @@ export const createFoodListing = async (input: CreateFoodListingInput, photo?: F
       p_pickup_blocks: expandAvailabilityBlocks(input.pickupBlocks),
     });
     if (error) throw error;
+    // The RPC doesn't take coordinates; pin the new listing on the receivers' map afterwards.
+    if (input.coordinates && created?.id) {
+      await supabase.from('food_listings')
+        .update({ latitude: input.coordinates.lat, longitude: input.coordinates.lng })
+        .eq('id', created.id);
+    }
   } catch (error) {
     if (createdPhotoPath) await supabase.storage.from('food-photos').remove([createdPhotoPath]);
     throw error;
