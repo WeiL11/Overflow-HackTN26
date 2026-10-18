@@ -198,8 +198,31 @@ const DonorAddListingModal = ({
               Pickup availability
             </h3>
             <p className="text-sm text-muted-foreground">
-              Select one or more future pickup windows.
+              Select one or more future pickup windows. Pickup times must end
+              before the Food expiration you set on the previous step; later
+              times can't be selected.
             </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Text as="label" htmlFor="scheduleExpiryTime" size="2">
+                Food expiration
+              </Text>
+              <TextField.Root
+                id="scheduleExpiryTime"
+                type="datetime-local"
+                value={draft.expiryTime}
+                onChange={(event) => {
+                  const expiryTime = event.target.value;
+                  const expiry = new Date(expiryTime).getTime();
+                  // Drop windows that would now end after the food expires.
+                  const pickupBlocks = Number.isNaN(expiry)
+                    ? draft.pickupBlocks
+                    : draft.pickupBlocks.filter(
+                        (block) => new Date(block.endsAt).getTime() <= expiry,
+                      );
+                  patch({ expiryTime, pickupBlocks });
+                }}
+              />
+            </div>
             <WeeklySchedule
               blocks={draft.pickupBlocks}
               onChange={(pickupBlocks) => patch({ pickupBlocks })}
