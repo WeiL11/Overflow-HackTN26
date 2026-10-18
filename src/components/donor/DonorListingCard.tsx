@@ -68,7 +68,7 @@ const DonorListingCard = ({
   return (
     <Card className="card-shadow hover:card-shadow-hover transition-shadow">
       <div className="p-5">
-        <div className="flex items-start gap-2">
+        <div className="flex flex-col items-start gap-2 sm:flex-row">
           <ListingPhoto
             path={listing.photo_path}
             analysis={listing.food_analysis}

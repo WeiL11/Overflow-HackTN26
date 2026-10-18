@@ -43,13 +43,13 @@ const ListingPhoto = ({
       : "";
   if (!path && !description) return null;
   return (
-    <div className="mb-2 w-24 shrink-0 space-y-1 sm:w-28">
+    <div className="mb-2 w-full shrink-0 space-y-1 sm:w-28">
       {url && !error && (
         <img
           src={url}
           alt={name}
           onError={() => setError(true)}
-          className="h-20 w-24 rounded-lg bg-muted/30 object-cover sm:w-28"
+          className="h-40 w-full rounded-lg bg-muted/30 object-cover sm:h-20 sm:w-28"
         />
       )}
       {error && (
