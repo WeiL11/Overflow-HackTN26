@@ -1,4 +1,4 @@
-import type { ListingStage } from '@/components/ListingTimeline';
+import type { ListingStage } from '@/types/lifecycle';
 
 // Timeline stage for one request, as the receiver sees it.
 export const requestStage = (status: string | undefined): ListingStage => {
@@ -6,7 +6,7 @@ export const requestStage = (status: string | undefined): ListingStage => {
     case 'completed': return 'completed';
     case 'pending_pickup': return 'pending_pickup';
     case 'pending': return 'requested';
-    case 'rejected': return 'rejected';
+    case 'declined': return 'declined';
     case 'cancelled': return 'cancelled';
     default: return 'available';
   }

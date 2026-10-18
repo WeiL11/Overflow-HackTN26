@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button, Card, Text, TextField } from '@radix-ui/themes';
 import { toast } from 'react-toastify';
 import Navbar from '@/components/Navbar';
-import { Utensils, Heart, Search, Building2 } from 'lucide-react';
+import { Utensils, Heart, Search } from 'lucide-react';
 import { APP_NAME } from '@/config/brand';
 
 const Signup = () => {
@@ -12,8 +12,8 @@ const Signup = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'donor' | 'receiver' | 'ngo'>(
-    (searchParams.get('role') as 'donor' | 'receiver' | 'ngo') || 'donor'
+  const [role, setRole] = useState<'donor' | 'receiver'>(
+    searchParams.get('role') === 'receiver' ? 'receiver' : 'donor'
   );
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -56,7 +56,7 @@ const Signup = () => {
           </div>
           <div className="p-6 pt-0">
             {/* Role picker */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-2 gap-3 mb-6">
               <button
                 type="button"
                 onClick={() => setRole('donor')}
@@ -76,16 +76,6 @@ const Signup = () => {
               >
                 <Search className={`h-6 w-6 ${role === 'receiver' ? 'text-primary' : 'text-muted-foreground'}`} />
                 <span className={`text-sm font-medium ${role === 'receiver' ? 'text-primary' : 'text-muted-foreground'}`}>Find Food</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('ngo')}
-                className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
-                  role === 'ngo' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'
-                }`}
-              >
-                <Building2 className={`h-6 w-6 ${role === 'ngo' ? 'text-primary' : 'text-muted-foreground'}`} />
-                <span className={`text-sm font-medium ${role === 'ngo' ? 'text-primary' : 'text-muted-foreground'}`}>NGO</span>
               </button>
             </div>
 

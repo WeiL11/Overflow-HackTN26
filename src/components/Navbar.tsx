@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@radix-ui/themes';
+import { Button, IconButton, Tooltip } from '@radix-ui/themes';
 import { useAuth } from '@/lib/auth-context';
 import { Utensils, LogOut, UserRound } from 'lucide-react';
 import { APP_NAME } from '@/config/brand';
@@ -32,9 +32,18 @@ const Navbar = () => {
                   <span className="hidden sm:inline">{profile?.full_name || user.email}</span>
                 </Button>
               </Link>
-              <Button variant="outline" size="2" className="border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-1" /> Sign Out
-              </Button>
+              <Tooltip content="Sign out">
+                <IconButton
+                  variant="ghost"
+                  color="red"
+                  size="2"
+                  className="!bg-transparent text-red-200 hover:!bg-red-500/20 hover:text-white"
+                  onClick={handleSignOut}
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </IconButton>
+              </Tooltip>
             </>
           ) : (
             <>

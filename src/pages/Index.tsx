@@ -15,7 +15,7 @@ const stats = [
 
 const steps = [
   {
-    icon: Heart,
+    icon: Utensils,
     title: "Post Surplus Food",
     desc: "Share extra food in seconds with details like quantity, pickup location, and availability.",
   },
@@ -25,7 +25,7 @@ const steps = [
     desc: "Browse real-time local donations and request what your community or organization needs.",
   },
   {
-    icon: Utensils,
+    icon: Heart,
     title: "Bridge the Gap",
     desc: "Keep fresh food out of landfills while making a direct impact in your neighborhood.",
   },
@@ -83,7 +83,7 @@ const Index = () => {
               <Link to="/signup?role=donor">
                 <Button
                   size="3"
-                  className="bg-background text-primary hover:bg-background/90 font-semibold text-base px-8"
+                  className="bg-primary text-white hover:bg-primary/90 font-semibold text-base px-8"
                 >
                   <Heart className="mr-2 h-5 w-5" /> Donate Food
                 </Button>
@@ -91,8 +91,7 @@ const Index = () => {
               <Link to="/signup?role=receiver">
                 <Button
                   size="3"
-                  variant="outline"
-                  className="bg-background text-primary border-background hover:bg-background/90 font-semibold text-base px-8"
+                  className="bg-primary text-white hover:bg-primary/90 font-semibold text-base px-8"
                 >
                   <Search className="mr-2 h-5 w-5" /> Find Food
                 </Button>

@@ -33,8 +33,8 @@ describe('ListingTimeline', () => {
     expect(screen.getByText('Done')).toHaveAttribute('aria-current', 'step');
   });
 
-  it('shows rejected and cancelled branch states', () => {
-    const { rerender } = render(<ListingTimeline stage="rejected" />);
+  it('shows declined and cancelled branch states', () => {
+    const { rerender } = render(<ListingTimeline stage="declined" />);
 
     expect(screen.getByLabelText('Item stage: Request declined')).toBeInTheDocument();
     expect(screen.getByText('Request declined')).toHaveAttribute('aria-current', 'step');

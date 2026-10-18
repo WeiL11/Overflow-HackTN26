@@ -1,73 +1,119 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Button, Text } from '@radix-ui/themes';
+import { useRef, useState } from 'react';
+import { Button, IconButton, Tooltip } from '@radix-ui/themes';
+import { Camera, Loader2, Sparkles, Trash2 } from 'lucide-react';
+import type { FoodPhotoSuggestion } from '@/types/food-photo';
+import { analyzeFoodPhoto, resizeImage } from '@/lib/foodPhoto';
 
-export interface FoodAnalysis {
-  contains_food: boolean;
-  food_name: string;
-  description: string;
-  visible_items: string[];
-}
-
-interface Props {
-  photo: File | null;
-  onPhoto: (photo: File | null) => void;
-  onAnalysis: (analysis: FoodAnalysis | null) => void;
+type FoodPhotoUploadProps = {
   disabled: boolean;
-  onBusy: (busy: boolean) => void;
-}
+  onPhotoChange: (photo: File | null) => void;
+  onSuggestion: (suggestion: FoodPhotoSuggestion | null) => void;
+  onBusyChange: (busy: boolean) => void;
+};
 
-export default function FoodPhotoUpload({ photo, onPhoto, onAnalysis, disabled, onBusy }: Props) {
-  const [preview, setPreview] = useState('');
-  const [busy, setBusy] = useState(false);
+const FoodPhotoUpload = ({ disabled, onPhotoChange, onSuggestion, onBusyChange }: FoodPhotoUploadProps) => {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<FoodPhotoSuggestion | null>(null);
   const [error, setError] = useState('');
-  const [analysis, setAnalysis] = useState<FoodAnalysis | null>(null);
-  useEffect(() => {
-    if (!photo) { setPreview(''); return; }
-    const url = URL.createObjectURL(photo);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [photo]);
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const analyze = async () => {
-    if (!photo) return;
-    setBusy(true); onBusy(true); setError('');
+  const runAnalysis = async (image: string) => {
+    if (busy || disabled) return;
+    setBusy(true);
+    onBusyChange(true);
+    setError('');
+    setAnalysis(null);
+    onSuggestion(null);
     try {
-      const body = new FormData();
-      body.append('photo', photo);
-      const { data, error: invokeError } = await supabase.functions.invoke('analyze-food', { body });
-      if (invokeError) {
-        const response = invokeError.context;
-        const detail = response instanceof Response ? await response.json().catch(() => null) : null;
-        throw new Error(detail?.error || 'Analysis failed. Please retry or enter details manually.');
-      }
-      if (!data?.analysis) throw new Error('No analysis returned. Please retry.');
-      setAnalysis(data.analysis);
-      onAnalysis(data.analysis);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Analysis failed. Please retry.');
-    } finally { setBusy(false); onBusy(false); }
+      const suggestion = await analyzeFoodPhoto(image);
+      setAnalysis(suggestion);
+      onSuggestion(suggestion);
+      if (!suggestion.isFood) setError('No recognizable food detected. Try a clearer photo or enter details manually.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Photo analysis failed.');
+    } finally {
+      setBusy(false);
+      onBusyChange(false);
+    }
   };
 
-  return <div className="space-y-3 rounded-lg border p-4">
-    <Text as="label" size="2" weight="medium" htmlFor="food-photo">Food photo (optional)</Text>
-    <p className="text-sm text-muted-foreground">Upload a JPEG, PNG, or WebP up to 5 MB. Analyze it to suggest a food name. Analysis sends the photo to Google Gemini.</p>
-    <input className="block w-full rounded-md border p-2 text-sm" id="food-photo" type="file" accept="image/jpeg,image/png,image/webp" disabled={disabled || busy} onChange={event => {
-      const file = event.target.files?.[0] || null;
-      setAnalysis(null); onAnalysis(null); onPhoto(null); setError('');
-      if (file && (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size === 0 || file.size > 5 * 1024 * 1024)) {
-        setError('Choose a JPEG, PNG, or WebP photo up to 5 MB.'); event.target.value = ''; return;
-      }
-      onPhoto(file);
-    }} />
-    {preview && <img src={preview} alt="Selected food donation" className="max-h-56 rounded-md object-contain" />}
-    {photo && <Button type="button" variant="soft" disabled={disabled || busy} onClick={analyze}>{busy ? 'Analyzing photo…' : 'Analyze food photo'}</Button>}
-    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    {analysis && <div role="status" className="space-y-1 text-sm">
-      <p className="font-medium">{analysis.contains_food ? analysis.food_name : 'No recognizable food detected'}</p>
-      <p>{analysis.description}</p>
-      {analysis.visible_items.length > 0 && <p>Visible items: {analysis.visible_items.join(', ')}</p>}
-      <p className="text-muted-foreground">Review the suggestion. A photo cannot confirm food safety, allergens, quantity, or expiry.</p>
-    </div>}
-  </div>;
-}
+  const handleFile = async (file: File | undefined) => {
+    if (!file || busy || disabled) return;
+    setBusy(true);
+    onBusyChange(true);
+    setError('');
+    setAnalysis(null);
+    onSuggestion(null);
+    try {
+      const image = await resizeImage(file);
+      setPreview(image);
+      const blob = await (await fetch(image)).blob();
+      onPhotoChange(new File([blob], 'food.jpg', { type: 'image/jpeg' }));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not read this photo.');
+    } finally {
+      setBusy(false);
+      onBusyChange(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const removePhoto = () => {
+    setPreview(null);
+    setAnalysis(null);
+    setError('');
+    onPhotoChange(null);
+    onSuggestion(null);
+    if (inputRef.current) inputRef.current.value = '';
+  };
+
+  return (
+    <div className="space-y-3">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
+        aria-label="Food photo"
+        className="hidden"
+        disabled={disabled || busy}
+        onChange={event => handleFile(event.target.files?.[0])}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={disabled || busy}
+        className="flex w-full items-center gap-4 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 text-left transition-colors hover:border-primary/60 hover:bg-primary/10 disabled:cursor-wait"
+      >
+        {preview ? (
+          <img src={preview} alt="Food photo" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+        ) : (
+          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <Camera className="h-7 w-7 text-primary" />
+          </span>
+        )}
+        <span className="flex-1">
+          <span className="flex items-center gap-1.5 font-medium text-foreground">
+            {busy ? <><Loader2 className="h-4 w-4 animate-spin text-primary" /> Analyzing photo…</> : <><Sparkles className="h-4 w-4 text-primary" /> {preview ? 'Use a different photo' : 'Snap or upload a photo'}</>}
+          </span>
+          <span className="mt-0.5 block text-sm text-muted-foreground">AI suggests food details. Review all suggestions and confirm quantity and availability.</span>
+        </span>
+      </button>
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {preview && (
+        <div className="flex gap-3">
+          <Tooltip content={analysis ? 'Analyze again' : 'Analyze food photo'}>
+            <IconButton type="button" variant="soft" disabled={disabled || busy} aria-label={analysis ? 'Analyze again' : 'Analyze food photo'} onClick={() => runAnalysis(preview)}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip content="Remove photo"><IconButton type="button" variant="ghost" color="red" className="!bg-transparent hover:!bg-red-500/10" disabled={disabled || busy} aria-label="Remove photo" onClick={removePhoto}><Trash2 className="h-4 w-4" /></IconButton></Tooltip>
+        </div>
+      )}
+      {analysis?.description && <p role="status" className="text-sm text-muted-foreground">{analysis.description}</p>}
+    </div>
+  );
+};
+
+export default FoodPhotoUpload;

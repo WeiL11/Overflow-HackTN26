@@ -26,9 +26,9 @@ const ExpiryCountdown = ({ expiryTime }: ExpiryCountdownProps) => {
   const [remaining, setRemaining] = useState(() => getTimeRemaining(expiryTime));
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setRemaining(getTimeRemaining(expiryTime));
-    }, 60000); // update every minute
+    const updateRemaining = () => setRemaining(getTimeRemaining(expiryTime));
+    updateRemaining();
+    const interval = setInterval(updateRemaining, 1000); // update every second
     return () => clearInterval(interval);
   }, [expiryTime]);
 

@@ -1,15 +1,52 @@
+import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { resolveSeedUserIds } from "./seed-users.mjs";
-import { listingExpiry } from "./seed-time.mjs";
 import { generateDevAccounts } from "./generate-dev-accounts.mjs";
-import { getLocalCredentials } from "./local-supabase.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const seedDataPath = path.join(rootDir, "supabase", "seed-data.json");
 const envLocalPath = path.join(rootDir, ".env.local");
+
+const parseStatusEnv = (output) =>
+  Object.fromEntries(
+    output
+      .split(/\r?\n/)
+      .map((line) => line.match(/^([A-Z_]+)=(.*)$/))
+      .filter(Boolean)
+      .map(([, key, value]) => [key, value.replace(/^"(.*)"$/, "$1")]),
+  );
+
+const getLocalCredentials = () => {
+  try {
+    const output = execFileSync("npx", ["supabase", "status", "-o", "env"], {
+      cwd: rootDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 15000,
+    });
+    const values = parseStatusEnv(output);
+    const required = ["API_URL", "ANON_KEY", "SERVICE_ROLE_KEY"];
+    if (required.some((key) => !values[key])) {
+      throw new Error("Supabase status did not return the required local credentials.");
+    }
+    const apiUrl = new URL(values.API_URL);
+    if (!["localhost", "127.0.0.1"].includes(apiUrl.hostname)) {
+      throw new Error("Seeding is only allowed against a local Supabase API.");
+    }
+    return { apiUrl: apiUrl.toString().replace(/\/$/, ""), anonKey: values.ANON_KEY, serviceRoleKey: values.SERVICE_ROLE_KEY };
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("required local credentials")) {
+      throw error;
+    }
+    if (error instanceof Error && error.message.includes("only allowed")) {
+      throw error;
+    }
+    throw new Error("Unable to read local Supabase status.");
+  }
+};
 
 const assertResponse = ({ data, error }, operation) => {
   if (error) {
@@ -21,8 +58,8 @@ const assertResponse = ({ data, error }, operation) => {
 const seed = async () => {
   const credentials = getLocalCredentials();
   const seedData = JSON.parse(await readFile(seedDataPath, "utf8"));
-  if (!Array.isArray(seedData.users) || !Array.isArray(seedData.listings) || !Array.isArray(seedData.requests)) {
-    throw new Error("Seed data must contain users, listings, and requests arrays.");
+  if (!Array.isArray(seedData.users) || !Array.isArray(seedData.listings) || !Array.isArray(seedData.pickupSlots) || !Array.isArray(seedData.requests)) {
+    throw new Error("Seed data must contain users, listings, pickupSlots, and requests arrays.");
   }
 
   const admin = createClient(credentials.apiUrl, credentials.serviceRoleKey, {
@@ -66,23 +103,42 @@ const seed = async () => {
     assertResponse(profileResponse, `Upserting profile ${user.email}`);
   }
 
-  const seededAt = new Date();
+  const expiryBase = Date.now();
   const listings = seedData.listings.map((listing) => ({
     id: listing.id,
     donor_id: userIds.get(listing.donorId) || listing.donorId,
     food_name: listing.foodName,
-    category: listing.category ?? "other",
-    tags: listing.tags ?? [],
-    description: listing.description ?? null,
     quantity: listing.quantity,
-    location: listing.location,
+    original_quantity: listing.originalQuantity ?? listing.quantity,
     latitude: listing.latitude ?? null,
     longitude: listing.longitude ?? null,
+    photo_metadata: listing.photoMetadata || null,
+    location: listing.location,
     notes: listing.notes || null,
-    expiry_time: listingExpiry(listing, seededAt).toISOString(),
+    expiry_time: new Date(expiryBase + listing.expiryOffsetHours * 60 * 60 * 1000).toISOString(),
     status: listing.status,
   }));
   assertResponse(await admin.from("food_listings").upsert(listings, { onConflict: "id" }), "Upserting food listings");
+
+  const pickupBase = Math.ceil(Date.now() / (15 * 60 * 1000)) * 15 * 60 * 1000;
+  const pickupSlots = seedData.pickupSlots.map((slot) => {
+    const startsAt = new Date(pickupBase + slot.startOffsetHours * 60 * 60 * 1000);
+    return {
+      id: slot.id,
+      listing_id: slot.listingId,
+      capacity: slot.capacity,
+      starts_at: startsAt.toISOString(),
+      ends_at: new Date(startsAt.getTime() + 15 * 60 * 1000).toISOString(),
+    };
+  });
+  for (const [index, slot] of pickupSlots.entries()) {
+    const temporaryStart = new Date(Date.UTC(2099, 0, index + 1));
+    assertResponse(await admin.from("pickup_slots").update({
+      starts_at: temporaryStart.toISOString(),
+      ends_at: new Date(temporaryStart.getTime() + 15 * 60 * 1000).toISOString(),
+    }).eq("id", slot.id), `Preparing pickup slot ${slot.id}`);
+  }
+  assertResponse(await admin.from("pickup_slots").upsert(pickupSlots, { onConflict: "id" }), "Upserting pickup slots");
 
   const requests = seedData.requests.map((request) => ({
     id: request.id,
@@ -91,8 +147,22 @@ const seed = async () => {
     status: request.status,
     quantity: request.quantity,
     notes: request.notes || null,
+    pickup_confirmed_at: null,
+    status_note: null,
+    status_note_author: null,
   }));
   assertResponse(await admin.from("food_requests").upsert(requests, { onConflict: "id" }), "Upserting food requests");
+  for (const request of seedData.requests) {
+    assertResponse(await admin.from("request_pickup_allocations").delete().eq("request_id", request.id), `Clearing allocations for request ${request.id}`);
+    const allocations = (request.allocations || []).map(allocation => ({
+      request_id: request.id,
+      pickup_slot_id: allocation.slotId,
+      quantity: allocation.quantity,
+    }));
+    if (allocations.length > 0) {
+      assertResponse(await admin.from("request_pickup_allocations").insert(allocations), `Inserting allocations for request ${request.id}`);
+    }
+  }
 
   await writeFile(
     envLocalPath,

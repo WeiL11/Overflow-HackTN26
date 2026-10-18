@@ -12,8 +12,8 @@ import ReceiverDashboard from "./pages/ReceiverDashboard";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
-  <Theme accentColor="grass" grayColor="sage" radius="large" scaling="100%">
-      <ToastContainer position="top-right" />
+  <>
+    <Theme accentColor="grass" grayColor="sage" radius="large" scaling="100%">
       <BrowserRouter>
         <AuthProvider>
           <Routes>
@@ -28,6 +28,8 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </Theme>
+    <ToastContainer position="top-right" style={{ zIndex: 2147483647 }} />
+  </>
 );
 
 export default App;

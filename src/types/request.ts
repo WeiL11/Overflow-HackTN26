@@ -1,0 +1,10 @@
+import type { Tables } from '@/integrations/supabase/types';
+import type { PickupSlot } from './pickup';
+export type FoodRequest = Tables<'food_requests'>;
+export type RequestPickupAllocation = Tables<'request_pickup_allocations'>;
+export type RequestPickupAllocationWithSlot = RequestPickupAllocation & { pickup_slot: Pick<PickupSlot, 'starts_at' | 'ends_at'> | null };
+export type FoodRequestWithPickupAllocations = FoodRequest & { allocations: RequestPickupAllocationWithSlot[] };
+export type ReserveFoodInput = { listingId: string; quantity: number; pickupSlotId: string; notes?: string };
+export type RecipientRequest = Pick<FoodRequest, 'id' | 'listing_id' | 'status' | 'pickup_confirmed_at' | 'status_note' | 'status_note_author'> & { allocations: RequestPickupAllocationWithSlot[] };
+export type RequestByListing = Map<string, RecipientRequest>;
+export type RequestAction = 'complete' | 'decline' | 'confirm' | 'cancel';

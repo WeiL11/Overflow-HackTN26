@@ -17,65 +17,106 @@ export type Database = {
       food_listings: {
         Row: {
           category: string
+          description: string | null
+          latitude: number | null
+          longitude: number | null
           photo_metadata: Json | null
           photo_uploaded_at: string | null
+          tags: string[]
           photo_path: string | null
           food_analysis: Json | null
           created_at: string
-          description: string | null
           donor_id: string
           expiry_time: string
           food_name: string
           id: string
-          latitude: number | null
           location: string
-          longitude: number | null
           notes: string | null
+          original_quantity: number
           quantity: number
           status: string
-          tags: string[]
         }
         Insert: {
           category?: string
+          description?: string | null
+          latitude?: number | null
+          longitude?: number | null
           photo_metadata?: Json | null
-          photo_uploaded_at?: string | null
+          photo_uploaded_at?: string
+          tags?: string[]
           photo_path?: string | null
           food_analysis?: Json | null
           created_at?: string
-          description?: string | null
           donor_id: string
           expiry_time: string
           food_name: string
           id?: string
-          latitude?: number | null
           location: string
-          longitude?: number | null
           notes?: string | null
+          original_quantity?: number
           quantity: number
           status?: string
-          tags?: string[]
         }
         Update: {
           category?: string
+          description?: string | null
+          latitude?: number | null
+          longitude?: number | null
           photo_metadata?: Json | null
-          photo_uploaded_at?: string | null
+          photo_uploaded_at?: string
+          tags?: string[]
           photo_path?: string | null
           food_analysis?: Json | null
           created_at?: string
-          description?: string | null
           donor_id?: string
           expiry_time?: string
           food_name?: string
           id?: string
-          latitude?: number | null
           location?: string
-          longitude?: number | null
           notes?: string | null
+          original_quantity?: number
           quantity?: number
           status?: string
-          tags?: string[]
         }
         Relationships: []
+      }
+      pickup_slots: {
+        Row: {
+          capacity: number
+          created_at: string
+          ends_at: string
+          id: string
+          interval_unit: Database['public']['Enums']['pickup_interval']
+          listing_id: string
+          starts_at: string
+        }
+        Insert: {
+          capacity: number
+          created_at?: string
+          ends_at: string
+          id?: string
+          interval_unit?: Database['public']['Enums']['pickup_interval']
+          listing_id: string
+          starts_at: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          ends_at?: string
+          id?: string
+          interval_unit?: Database['public']['Enums']['pickup_interval']
+          listing_id?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_slots_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "food_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       food_requests: {
         Row: {
@@ -84,6 +125,8 @@ export type Database = {
           listing_id: string
           notes: string | null
           pickup_confirmed_at: string | null
+          status_note: string | null
+          status_note_author: string | null
           quantity: number
           receiver_id: string
           status: string
@@ -94,6 +137,8 @@ export type Database = {
           listing_id: string
           notes?: string | null
           pickup_confirmed_at?: string | null
+          status_note?: string | null
+          status_note_author?: string | null
           quantity?: number
           receiver_id: string
           status?: string
@@ -104,6 +149,8 @@ export type Database = {
           listing_id?: string
           notes?: string | null
           pickup_confirmed_at?: string | null
+          status_note?: string | null
+          status_note_author?: string | null
           quantity?: number
           receiver_id?: string
           status?: string
@@ -114,6 +161,42 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "food_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_pickup_allocations: {
+        Row: {
+          active: boolean
+          pickup_slot_id: string
+          quantity: number
+          request_id: string
+        }
+        Insert: {
+          active?: boolean
+          pickup_slot_id: string
+          quantity: number
+          request_id: string
+        }
+        Update: {
+          active?: boolean
+          pickup_slot_id?: string
+          quantity?: number
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_pickup_allocations_pickup_slot_id_fkey"
+            columns: ["pickup_slot_id"]
+            isOneToOne: false
+            referencedRelation: "pickup_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_pickup_allocations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "food_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -148,22 +231,60 @@ export type Database = {
     }
     Functions: {
       reserve_food: {
-        Args: { p_listing_id: string; p_notes?: string; p_quantity: number }
+        Args: { p_allocations: Json; p_listing_id: string; p_notes?: string; p_quantity: number }
         Returns: Database["public"]["Tables"]["food_requests"]["Row"]
       }
+      create_food_listing_with_slots: {
+        Args: {
+          p_food_analysis: Json
+          p_expiry_time: string
+          p_food_name: string
+          p_location: string
+          p_notes: string
+          p_photo_path: string
+          p_pickup_blocks: Json
+          p_quantity: number
+        }
+        Returns: Database["public"]["Tables"]["food_listings"]["Row"]
+      }
+      get_available_pickup_slots: {
+        Args: { p_listing_id: string }
+        Returns: {
+          allocated: number
+          capacity: number
+          created_at: string
+          ends_at: string
+          id: string
+          listing_id: string
+          remaining: number
+          starts_at: string
+        }[]
+      }
+      replace_listing_pickup_slots: {
+        Args: { p_listing_id: string; p_new_slots: Json; p_remove_ids: string[] }
+        Returns: Database["public"]["Tables"]["pickup_slots"]["Row"][]
+      }
+      update_food_listing_details: {
+        Args: { p_expiry_time: string; p_food_name: string; p_listing_id: string; p_location: string; p_notes: string; p_total_quantity: number }
+        Returns: Database["public"]["Tables"]["food_listings"]["Row"]
+      }
       advance_food_request: {
-        Args: { p_direction: string; p_request_id: string }
+        Args: { p_direction: string; p_note?: string; p_request_id: string }
         Returns: Database["public"]["Tables"]["food_requests"]["Row"]
       }
       cancel_food_request: {
-        Args: { p_request_id: string }
+        Args: { p_note?: string; p_request_id: string }
         Returns: Database["public"]["Tables"]["food_requests"]["Row"]
       }
       confirm_food_pickup: {
-        Args: { p_request_id: string }
+        Args: { p_note?: string; p_request_id: string }
         Returns: Database["public"]["Tables"]["food_requests"]["Row"]
       }
-      reject_food_request: {
+      decline_food_request: {
+        Args: { p_note?: string; p_request_id: string }
+        Returns: Database["public"]["Tables"]["food_requests"]["Row"]
+      }
+      undo_food_request_decline: {
         Args: { p_request_id: string }
         Returns: Database["public"]["Tables"]["food_requests"]["Row"]
       }
@@ -177,7 +298,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      pickup_interval: '15_minutes'
     }
     CompositeTypes: {
       [_ in never]: never

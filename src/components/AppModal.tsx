@@ -1,4 +1,4 @@
-import { Dialog } from '@radix-ui/themes';
+import { Dialog, Tooltip } from '@radix-ui/themes';
 import type { ComponentProps, ReactNode } from 'react';
 
 type AppModalProps = {
@@ -6,21 +6,25 @@ type AppModalProps = {
   onOpenChange: (open: boolean) => void;
   trigger: ReactNode;
   title: ReactNode;
-  description: ReactNode;
+  description?: ReactNode;
   children: ReactNode;
   maxWidth?: ComponentProps<typeof Dialog.Content>['maxWidth'];
+  triggerTooltip?: string;
 };
 
-const AppModal = ({ open, onOpenChange, trigger, title, description, children, maxWidth = '560px' }: AppModalProps) => (
+const AppModal = ({ open, onOpenChange, trigger, title, description, children, maxWidth = '560px', triggerTooltip }: AppModalProps) => {
+  const dialogTrigger = <Dialog.Trigger>{trigger}</Dialog.Trigger>;
+  return (
   <Dialog.Root open={open} onOpenChange={onOpenChange}>
-    <Dialog.Trigger>{trigger}</Dialog.Trigger>
-    <Dialog.Content maxWidth={maxWidth}>
+    {triggerTooltip ? <Tooltip content={triggerTooltip}>{dialogTrigger}</Tooltip> : dialogTrigger}
+    <Dialog.Content maxWidth={maxWidth} className="max-h-[90vh] overflow-y-auto">
       <Dialog.Title className="font-heading">{title}</Dialog.Title>
-      <Dialog.Description size="2" mb="4">{description}</Dialog.Description>
+      {description && <Dialog.Description size="2" mb="4">{description}</Dialog.Description>}
       {children}
     </Dialog.Content>
   </Dialog.Root>
-);
+  );
+};
 
 export const ModalClose = Dialog.Close;
 export default AppModal;

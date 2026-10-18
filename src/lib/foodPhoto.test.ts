@@ -21,7 +21,14 @@ describe('merged food analysis', () => {
     vi.stubGlobal('fetch', fetchMock);
     invoke.mockResolvedValue({ data: { analysis: { contains_food: true, food_name: 'Bread', description: 'Bread rolls' } }, error: null });
     const result = await analyzeFoodPhoto('data:image/jpeg;base64,test');
-    expect(result).toMatchObject({ isFood: true, foodName: 'Bread', quantity: null, shelfLifeHours: null });
+    expect(result).toMatchObject({
+      isFood: true,
+      foodName: 'Bread',
+      quantity: null,
+      shelfLifeHours: null,
+      keywords: ['bread'],
+      llm_query: { schema_version: 1, task: 'food_donation_follow_up' },
+    });
     expect(invoke).toHaveBeenCalledWith('analyze-food', { body: expect.any(FormData) });
   });
 });
