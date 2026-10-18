@@ -132,3 +132,15 @@ CHECK_AI=1 node scripts/check-food-flow.mjs
 ```
 
 This check creates and cleans up a temporary listing/photo, checks stored analysis and receiver access, and verifies that receivers cannot read unattached photos.
+
+### Image metadata
+
+New donor photos retain original filename, MIME type, byte size, and decoded dimensions alongside the resized JPEG's format, size, and dimensions. These details remain stored in the background and are not shown in the donation UI. The database records when the photo is attached to a listing; editing other fields preserves that timestamp. Original metadata is captured in the browser before JPEG conversion and is descriptive, not proof of when or where a photo was taken. This feature does not extract EXIF camera or GPS data. Older listings remain supported and show no invented metadata or upload times.
+
+### Analyzer keywords and LLM handoff
+
+OCI and Gemini now generate up to 15 keywords describing visible food, preparation, and packaging. Keywords are normalized and deduplicated, with visible items or the detected title used for older model responses. Non-food results produce no food query.
+
+Each new `food_analysis` includes `keywords` and `llm_query`. The latter is a versioned JSON payload with `schema_version`, `task`, and `messages` (a system instruction plus a JSON observation message containing keywords, title, description, and source model). Use `analysis.llm_query.messages` as the messages for a downstream LLM, adding your own task-specific requirements in trusted instructions. Model observations remain untrusted input. The payload does not include GPS, account details, filenames, or inferred safety/expiry.
+
+The donor form and saved listings show keyword tags. The LLM query payload is stored in the background and is not exposed in the UI. This prepares a handoff; it does not invoke a second LLM automatically. Existing listings are unchanged until reanalyzed. No database migration is required because the payload is stored in the existing analysis JSON. Restart the OCI server or redeploy/restart the Supabase function to use the updated keyword prompts.

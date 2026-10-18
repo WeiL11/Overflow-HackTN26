@@ -1,10 +1,11 @@
+import FoodQueryDetails from '@/components/FoodQueryDetails';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { geocodeAddress, type LatLng } from '@/lib/geo';
 import ListingPhoto from '@/components/ListingPhoto';
 import type { Json } from '@/integrations/supabase/types';
-import { analyzeFoodPhoto, detectCurrentAddress, resizeImage, toDatetimeLocal } from '@/lib/foodPhoto';
+import { analyzeFoodPhoto, detectCurrentAddress, prepareFoodPhoto, toDatetimeLocal, type PhotoMetadata } from '@/lib/foodPhoto';
 import Navbar from '@/components/Navbar';
 import ExpiryCountdown from '@/components/ExpiryCountdown';
 import ListingTimeline from '@/components/ListingTimeline';
@@ -33,6 +34,7 @@ const DonorDashboard = () => {
   const [expiryTime, setExpiryTime] = useState('');
   const [listingNotes, setListingNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [photoMetadata, setPhotoMetadata] = useState<PhotoMetadata | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
   const [analysis, setAnalysis] = useState<Json | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -56,6 +58,7 @@ const DonorDashboard = () => {
     setListingNotes('');
     setPhotoPreview(null);
     setPhoto(null);
+    setPhotoMetadata(null);
     setAnalysis(null);
     setAiFilled(false);
     setAnalysisError('');
@@ -109,11 +112,12 @@ const DonorDashboard = () => {
     setAnalysisError('');
     setAnalyzing(true);
     try {
-      const image = await resizeImage(file);
+      const prepared = await prepareFoodPhoto(file);
+      const { image } = prepared;
       setAnalysis(null); setAiFilled(false);
       setPhotoPreview(image);
-      const resizedPhoto = await (await fetch(image)).blob();
-      setPhoto(new File([resizedPhoto], 'food.jpg', { type: 'image/jpeg' }));
+      setPhoto(prepared.file);
+      setPhotoMetadata(prepared.metadata);
       await runAnalysis(image);
     } catch (error) {
       setAnalysisError(errorMessage(error, 'Could not read this photo.'));
@@ -197,6 +201,7 @@ const DonorDashboard = () => {
         longitude: position?.lng ?? null,
         expiry_time: new Date(expiryTime).toISOString(),
         notes: listingNotes.trim() || null,
+        photo_metadata: photoMetadata ? { ...photoMetadata } : null,
         food_analysis: analysis,
       }, photo || undefined);
       toast.success('Food listing added!');
@@ -348,15 +353,14 @@ const DonorDashboard = () => {
               return (
                 <Card key={item.id} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">
+                    <div className="mb-3 flex items-center gap-2">
+                      <h3 className="font-semibold text-foreground text-lg">{item.food_name}</h3>
+                      <Badge {...statusColor(item.status)}>{item.status}</Badge>
+                    </div>
                     <ListingPhoto path={item.photo_path} analysis={item.food_analysis} name={item.food_name} />
                     <div className="flex items-start justify-between">
                       <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-foreground text-lg">{item.food_name}</h3>
-                          <Badge {...statusColor(item.status)}>
-                            {item.status}
-                          </Badge>
-                        </div>
+
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mt-2">
                           <span className="flex items-center gap-1"><Package className="h-3.5 w-3.5" />{item.quantity} items</span>
                           <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{item.location}</span>
@@ -505,15 +509,16 @@ const DonorDashboard = () => {
                   )}
                 </span>
                 <span className="mt-0.5 block text-sm text-muted-foreground">
-                  AI suggests food details. Review all suggestions and confirm quantity and availability. Photos may be sent to Google Gemini.
+                  AI suggests food details. Review all suggestions and confirm quantity and availability.
                 </span>
               </span>
             </button>
+            <FoodQueryDetails analysis={analysis} />
             {analysisError && <p role="alert" className="text-sm text-red-600">{analysisError}</p>}
             {photoPreview && <div className="flex gap-3">
               <Button type="button" variant="soft" disabled={analyzing || submitting} onClick={() => runAnalysis(photoPreview)}>Retry analysis</Button>
               <Button type="button" variant="outline" disabled={analyzing || submitting} onClick={() => {
-                setPhoto(null); setPhotoPreview(null); setAnalysis(null); setAiFilled(false); setAnalysisError('');
+                setPhoto(null); setPhotoMetadata(null); setPhotoPreview(null); setAnalysis(null); setAiFilled(false); setAnalysisError('');
               }}>Remove photo</Button>
             </div>}
             {analysis && typeof analysis === 'object' && !Array.isArray(analysis) && typeof analysis.description === 'string' && <p role="status" className="text-sm text-muted-foreground">{analysis.description}</p>}
