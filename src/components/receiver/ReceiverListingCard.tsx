@@ -32,13 +32,13 @@ const ReceiverListingCard = ({
   return (
     <Card className="card-shadow hover:card-shadow-hover transition-shadow">
       <div className="p-5">
-        <div className="flex items-start gap-4">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:gap-4">
           <ListingPhoto
             path={listing.photo_path}
             analysis={listing.food_analysis}
             name={listing.food_name}
           />
-          <div className="flex min-w-0 flex-1 items-start justify-between gap-4">
+          <div className="flex w-full min-w-0 flex-1 items-start justify-between gap-4">
             <div className="min-w-0 flex-1 space-y-2">
               <h3 className="text-lg font-semibold text-foreground">
                 {listing.food_name}

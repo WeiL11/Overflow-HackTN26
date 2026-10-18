@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { resolveSeedUserIds } from "./seed-users.mjs";
 import { generateDevAccounts } from "./generate-dev-accounts.mjs";
+import { listingExpiry } from "./seed-time.mjs";
+import { replaceOpenPickupSlots } from "./seed-slots.mjs";
+import { uploadSeedPhotos } from "./seed-photos.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const seedDataPath = path.join(rootDir, "supabase", "seed-data.json");
@@ -103,19 +106,22 @@ const seed = async () => {
     assertResponse(profileResponse, `Upserting profile ${user.email}`);
   }
 
-  const expiryBase = Date.now();
+  const seededAt = new Date();
   const listings = seedData.listings.map((listing) => ({
     id: listing.id,
     donor_id: userIds.get(listing.donorId) || listing.donorId,
     food_name: listing.foodName,
     quantity: listing.quantity,
     original_quantity: listing.originalQuantity ?? listing.quantity,
+    category: listing.category ?? "other",
+    tags: listing.tags ?? [],
+    description: listing.description ?? null,
     latitude: listing.latitude ?? null,
     longitude: listing.longitude ?? null,
     photo_metadata: listing.photoMetadata || null,
     location: listing.location,
     notes: listing.notes || null,
-    expiry_time: new Date(expiryBase + listing.expiryOffsetHours * 60 * 60 * 1000).toISOString(),
+    expiry_time: listingExpiry(listing, seededAt).toISOString(),
     status: listing.status,
   }));
   assertResponse(await admin.from("food_listings").upsert(listings, { onConflict: "id" }), "Upserting food listings");
@@ -148,6 +154,14 @@ const seed = async () => {
     }).eq("id", slot.id), `Preparing pickup slot ${slot.id}`);
   }
   assertResponse(await admin.from("pickup_slots").upsert(pickupSlots, { onConflict: "id" }), "Upserting pickup slots");
+
+  // Listings without explicit slots (the campus restaurants) get 15-minute slots up to their deadline.
+  const withSlots = new Set(seedData.pickupSlots.map((slot) => slot.listingId));
+  for (const listing of listings.filter((item) => !withSlots.has(item.id) && item.status === "available")) {
+    await replaceOpenPickupSlots(admin, listing.id, new Date(listing.expiry_time), listing.quantity, seededAt);
+  }
+
+  await uploadSeedPhotos(admin, seedData, userIds);
 
   const requests = seedData.requests.map((request) => ({
     id: request.id,
