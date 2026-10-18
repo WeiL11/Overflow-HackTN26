@@ -1,3 +1,4 @@
+import FoodQueryDetails from './FoodQueryDetails';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
@@ -22,6 +23,7 @@ const ListingPhoto = ({ path, analysis, name }: { path: string | null; analysis:
   return <div className="mb-4 space-y-2">
     {url && !error && <img src={url} alt={name} onError={() => setError(true)} className="max-h-56 w-full rounded-lg object-contain bg-muted/30" />}
     {error && <p className="text-sm text-muted-foreground">Photo unavailable.</p>}
+    <FoodQueryDetails analysis={analysis} />
     {description && <p className="text-sm text-muted-foreground"><span className="font-medium">AI photo description: </span>{description}</p>}
   </div>;
 };

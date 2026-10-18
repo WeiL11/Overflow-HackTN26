@@ -300,13 +300,13 @@ const ReceiverDashboard = () => {
               return (
                 <Card key={item.id} id={`listing-${item.id}`} className="card-shadow hover:card-shadow-hover transition-shadow">
                   <div className="p-5">
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <h3 className="font-semibold text-foreground text-lg">{item.food_name}</h3>
+                      <Badge color="gray" variant="soft">{categoryLabel(item.category)}</Badge>
+                    </div>
                     <ListingPhoto path={item.photo_path} analysis={item.food_analysis} name={item.food_name} />
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-2 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold text-foreground text-lg">{item.food_name}</h3>
-                          <Badge color="gray" variant="soft">{categoryLabel(item.category)}</Badge>
-                        </div>
                         {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
                         {item.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
