@@ -29,6 +29,7 @@ import type {
   DonorListingFilter,
   FoodListing,
   AvailabilityBlock,
+  FoodRequest,
   FoodRequestWithPickupAllocations,
   PickupSlotSummary,
   ProfileSummary,
@@ -519,6 +520,12 @@ const DonorDashboard = () => {
     }
   };
 
+  const applyUpdatedRequest = (updatedRequest: FoodRequest) => {
+    setRequests(current => current.map(request =>
+      request.id === updatedRequest.id ? { ...request, ...updatedRequest } : request,
+    ));
+  };
+
   const handleAdvanceRequest = async (
     requestId: string,
     direction: "forward" | "back",
@@ -530,13 +537,7 @@ const DonorDashboard = () => {
         direction,
         note,
       );
-      setRequests((current) =>
-        current.map((request) =>
-          request.id === requestId
-            ? { ...request, ...updatedRequest }
-            : request,
-        ),
-      );
+      applyUpdatedRequest(updatedRequest);
       toast.success(
         direction === "forward" ? "Request advanced." : "Request moved back.",
       );
@@ -551,10 +552,10 @@ const DonorDashboard = () => {
 
   const handleDeclineRequest = async (requestId: string, note?: string) => {
     try {
-      await declineFoodRequest(requestId, note);
+      const updatedRequest = await declineFoodRequest(requestId, note);
+      applyUpdatedRequest(updatedRequest);
       toast.success("Request declined");
-      fetchListings();
-      fetchRequests();
+      await Promise.all([fetchListings(), fetchRequests()]);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to decline request.",
@@ -565,10 +566,10 @@ const DonorDashboard = () => {
 
   const handleUndoDecline = async (requestId: string) => {
     try {
-      await undoFoodRequestDecline(requestId);
+      const updatedRequest = await undoFoodRequestDecline(requestId);
+      applyUpdatedRequest(updatedRequest);
       toast.success("Decline undone.");
-      fetchListings();
-      fetchRequests();
+      await Promise.all([fetchListings(), fetchRequests()]);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to undo decline.",
