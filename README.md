@@ -2,6 +2,12 @@
 
 Food donation and redistribution app built with React, TypeScript, Vite, and Supabase, for #HACKTN26 Challenge #1 (Tennessee Food Edition).
 
+## Demo
+
+[![Overflow demo: a donor posts a food photo on the left, and a receiver finds it on the right](docs/demo/overflow-demo.gif)](docs/demo/overflow-demo.mp4)
+
+On the left, a donor uploads a photo of a chocolate donut. OCI Generative AI fills in the food name and quantity, the donor picks a pickup window, and posts it. On the right, a receiver sees the new listing appear in real time and finds it with search. [Watch the full-quality video (MP4, 37 s)](docs/demo/overflow-demo.mp4).
+
 ## About the project
 
 Nashville could rescue about 9.3 million meals a year, and more than 450,000 people in Middle and West Tennessee faced food insecurity in 2025. The food exists and the need exists; the gap is access. Overflow connects restaurants that have cooked surplus with nearby people and community groups who can use it, with no purchase or other barrier in between.
